@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plano Alimentar Interativo - Laio Sacramento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f7f4; 
+            color: #333;
+        }
+        .chart-container {
+            position: relative;
+            margin: auto;
+            height: 30vh;
+            width: 100%;
+            max-width: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 35vh;
+                max-width: 450px;
+            }
+        }
+        .macro-chart-container {
+            position: relative;
+            height: 200px;
+            width: 100%;
+        }
+        .meal-card.logged {
+            border-color: #10B981;
+            background-color: #F0FDF4;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
+
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Plano Alimentar Interativo</h1>
+            <p class="text-lg text-gray-600 mt-2">Olá, Laio! Acompanhe seu progresso diário aqui.</p>
+        </header>
+
+        <section id="dashboard" class="mb-10 bg-white p-6 rounded-2xl shadow-lg">
+            <h2 class="text-2xl font-bold text-center mb-4 text-gray-800">Resumo Diário</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                <div class="chart-container">
+                    <canvas id="caloriesChart"></canvas>
+                </div>
+                <div class="grid grid-cols-1 gap-6">
+                    <div class="macro-chart-container">
+                        <canvas id="proteinChart"></canvas>
+                    </div>
+                    <div class="macro-chart-container">
+                        <canvas id="carbsChart"></canvas>
+                    </div>
+                    <div class="macro-chart-container">
+                        <canvas id="fatChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="meal-plan">
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Refeições do Dia</h2>
+            <div id="meal-cards-container" class="space-y-6">
+            </div>
+        </section>
+
+        <section id="guidelines" class="mt-10">
+            <div class="text-center">
+                <button id="toggle-guidelines-btn" class="bg-emerald-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:bg-emerald-700 transition-all">
+                    Ver Orientações Importantes
+                </button>
+            </div>
+            <div id="guidelines-content" class="hidden mt-6 bg-white p-6 rounded-2xl shadow-lg">
+                <ul class="space-y-4 text-gray-700 list-disc list-inside">
+                    <li>**Hidratação:** Beba bastante água ao longo do dia, no mínimo 2-3 litros, especialmente devido aos treinos.</li>
+                    <li>**Consistência:** A chave para o ganho de massa muscular é a consistência. Tente seguir o plano o máximo possível, mesmo que haja pequenos desvios ocasionalmente.</li>
+                    <li>**Planejamento:** Prepare suas refeições com antecedência (marmitas) para facilitar a adesão à dieta em sua rotina de trabalho.</li>
+                    <li>**Monitoramento:** Monitore seu peso semanalmente e tire medidas corporais a cada 15 dias. Isso nos ajudará a entender como seu corpo está respondendo e a fazer ajustes.</li>
+                    <li>**Qualidade dos Alimentos:** Priorize alimentos frescos e minimamente processados.</li>
+                    <li>**Flexibilidade:** Este plano é um guia. Se um alimento não estiver disponível, tente substituí-lo por outro com perfil de macronutrientes semelhante.</li>
+                    <li>**Variação:** Varie os vegetais e as fontes de carboidratos complexos (além do arroz e batata) para garantir a ingestão de diversos micronutrientes.</li>
+                    <li>**Precisão:** Para maior precisão, utilize uma balança de cozinha para pesar os alimentos, especialmente no início.</li>
+                </ul>
+            </div>
+        </section>
+
+        <footer class="text-center mt-12 text-sm text-gray-500">
+            <p>Plano válido por 60 dias a partir de 31 de Maio de 2025.</p>
+            <p class="mt-1">Este plano alimentar é uma sugestão e não substitui a consulta individualizada com um profissional de saúde.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const dailyTargets = {
+                calories: 2790,
+                protein: 116,
+                carbs: 451,
+                fat: 58
+            };
+
+            let currentProgress = {
+                calories: 0,
+                protein: 0,
+                carbs: 0,
+                fat: 0
+            };
+
+            const mealsData = [
+                {
+                    id: 'cafe',
+                    time: '6:30h',
+                    name: 'Café da Manhã',
+                    logged: false,
+                    options: [
+                        { name: 'Pão com Ovo e Leite com Café', macros: { protein: 19, carbs: 58, fat: 16, calories: 480 }, details: ['Ovos: 120g (2 u.)', 'Pão integral: 100g (3 fatias)', 'Leite integral: 200ml', 'Azeite de oliva: 10ml', 'Açúcar (opcional): 10g'] },
+                        { name: 'Vitamina Hipercalórica', macros: { protein: 30, carbs: 140, fat: 10, calories: 770 }, details: ['Leite integral: 300ml', 'Hipercalórico em pó: 100g', 'Aveia em flocos: 60g', 'Banana: 200g (1 u.)'] }
+                    ]
+                },
+                {
+                    id: 'lanche1',
+                    time: '9:30h',
+                    name: 'Lanche da Manhã',
+                    logged: false,
+                    options: [
+                        { name: 'Whey Protein com Maçã', macros: { protein: 32, carbs: 20, fat: 1, calories: 145 }, details: ['Whey protein: 40g (com água)', 'Maçã média: 150g'] },
+                        { name: 'Empada de Frango', macros: { protein: 15, carbs: 20, fat: 18, calories: 320 }, details: ['Empada de frango: 1 unidade média (100g)'] },
+                        { name: 'Sanduíche Natural', macros: { protein: 22, carbs: 37, fat: 15, calories: 360 }, details: ['Pão integral: 60g (2 fatias)', 'Maionese: 15g (1 colher)', 'Milho: 30g (2 colheres)', 'Frango desfiado: 50g'] }
+                    ]
+                },
+                {
+                    id: 'almoco',
+                    time: '12:30h',
+                    name: 'Almoço',
+                    logged: false,
+                    options: [
+                        { name: 'Frango Grelhado', macros: { protein: 49, carbs: 40, fat: 10.5, calories: 400 }, details: ['Frango grelhado: 150g', 'Arroz branco cozido: 100g', 'Purê de batata: 100g', 'Azeite de oliva: 5ml'] },
+                        { name: 'Carne com Macarrão', macros: { protein: 35, carbs: 52, fat: 21, calories: 530 }, details: ['Carne de panela magra: 150g', 'Macarrão cozido: 200g', 'Molho branco caseiro: 100g', 'Queijo parmesão (opcional): 10g'] }
+                    ]
+                },
+                {
+                    id: 'lanche2',
+                    time: '16:00h',
+                    name: 'Lanche da Tarde',
+                    logged: false,
+                    options: [
+                        { name: 'Hipercalórico com Banana', macros: { protein: 11, carbs: 62, fat: 5, calories: 330 }, details: ['Dose de hipercalórico: 50g', 'Banana média: 120g'] },
+                        { name: 'Empada de Frango', macros: { protein: 15, carbs: 20, fat: 18, calories: 320 }, details: ['Empada de frango: 1 unidade média (100g)'] },
+                        { name: 'Sanduíche Natural', macros: { protein: 22, carbs: 37, fat: 15, calories: 360 }, details: ['Pão integral: 60g (2 fatias)', 'Maionese: 15g (1 colher)', 'Milho: 30g (2 colheres)', 'Frango desfiado: 50g'] }
+                    ]
+                },
+                {
+                    id: 'pos_treino',
+                    time: '18:00h',
+                    name: 'Pós-Treino',
+                    logged: false,
+                    options: [
+                        { name: 'Vitamina Hipercalórica', macros: { protein: 30, carbs: 140, fat: 10, calories: 770 }, details: ['Leite integral: 300ml', 'Hipercalórico em pó: 100g', 'Aveia em flocos: 60g', 'Banana: 200g (1 u.)'] }
+                    ]
+                },
+                {
+                    id: 'jantar',
+                    time: '21:00h',
+                    name: 'Jantar/Ceia',
+                    logged: false,
+                    options: [
+                        { name: 'Ovos com Batata Doce', macros: { protein: 22, carbs: 24, fat: 24, calories: 380 }, details: ['Ovos cozidos: 180g (3 u.)', 'Salada grande: A gosto', 'Azeite de oliva: 10ml', 'Batata doce cozida: 80g'] },
+                        { name: 'Macarronada', macros: { protein: 15, carbs: 50, fat: 10, calories: 370 }, details: ['Macarronada: 250g (porção média com molho simples)'] },
+                        { name: 'Misto Quente', macros: { protein: 23, carbs: 32, fat: 10, calories: 310 }, details: ['Pão integral: 60g (2 fatias)', 'Queijo muçarela: 30g (2 fatias)', 'Peito de peru: 50g (2 fatias)'] }
+                    ]
+                }
+            ];
+
+            const charts = {};
+
+            // Plugin para exibir texto no centro do gráfico de calorias (doughnut)
+            const centerTextPlugin = {
+                id: 'centerText',
+                beforeDraw(chart) {
+                    if (chart.canvas.id === 'caloriesChart') {
+                        const { ctx, width, height } = chart;
+                        ctx.restore();
+                        const fontSize = (height / 114).toFixed(2);
+                        ctx.font = `${fontSize}em Inter`;
+                        ctx.textBaseline = 'middle';
+                        ctx.fillStyle = '#333'; // Cor do texto
+
+                        const text = `${currentProgress.calories.toFixed(0)} kcal`;
+                        const textX = (width - ctx.measureText(text).width) / 2;
+                        const textY = height / 2;
+                        ctx.fillText(text, textX, textY);
+                        ctx.save();
+                    }
+                }
+            };
+            Chart.register(centerTextPlugin);
+            Chart.register(ChartDataLabels); // Registrar o plugin de data labels
+
+            function createChart(ctx, type, data, options) {
+                return new Chart(ctx, { type, data, options });
+            }
+
+            function updateDashboard() {
+                const { calories, protein, carbs, fat } = currentProgress;
+                const { calories: calTarget, protein: protTarget, carbs: carbTarget, fat: fatTarget } = dailyTargets;
+
+                charts.calories.data.datasets[0].data = [calories, Math.max(0, calTarget - calories)];
+                charts.calories.data.labels[0] = `Consumido: ${calories.toFixed(0)} kcal`;
+                charts.calories.update();
+                
+                charts.protein.data.datasets[0].data = [protein];
+                charts.protein.update();
+
+                charts.carbs.data.datasets[0].data = [carbs];
+                charts.carbs.update();
+
+                charts.fat.data.datasets[0].data = [fat];
+                charts.fat.update();
+            }
+
+            function initializeDashboard() {
+                const commonBarOptions = (target, labelColor) => ({
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { beginAtZero: true, max: target, display: false },
+                        y: { display: false }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: true,
+                            callbacks: {
+                                title: () => '',
+                                label: (context) => `${context.dataset.label}: ${context.raw.toFixed(0)}g / ${target}g`
+                            }
+                        },
+                        datalabels: {
+                            color: '#fff', // Cor do texto do rótulo
+                            anchor: 'end', // Posição do rótulo (no final da barra)
+                            align: 'end', // Alinhamento do rótulo
+                            formatter: (value) => `${value.toFixed(0)}g`, // Formato do texto do rótulo
+                            font: {
+                                weight: 'bold'
+                            }
+                        }
+                    }
+                });
+
+                charts.calories = createChart(document.getElementById('caloriesChart').getContext('2d'), 'doughnut', {
+                    labels: ['Consumido', 'Restante'],
+                    datasets: [{
+                        data: [0, dailyTargets.calories],
+                        backgroundColor: ['#10B981', '#E5E7EB'],
+                        borderColor: '#f8f7f4',
+                        borderWidth: 4,
+                        hoverOffset: 4
+                    }]
+                }, {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: true },
+                        centerText: {} // Ativar o plugin de texto central
+                    }
+                });
+                
+                charts.protein = createChart(document.getElementById('proteinChart').getContext('2d'), 'bar', {
+                    labels: ['Proteína'],
+                    datasets: [{ label: 'Proteína', data: [0], backgroundColor: '#3B82F6' }]
+                }, commonBarOptions(dailyTargets.protein, '#3B82F6'));
+                
+                charts.carbs = createChart(document.getElementById('carbsChart').getContext('2d'), 'bar', {
+                    labels: ['Carboidratos'],
+                    datasets: [{ label: 'Carboidratos', data: [0], backgroundColor: '#F59E0B' }]
+                }, commonBarOptions(dailyTargets.carbs, '#F59E0B'));
+
+                charts.fat = createChart(document.getElementById('fatChart').getContext('2d'), 'bar', {
+                    labels: ['Gorduras'],
+                    datasets: [{ label: 'Gorduras', data: [0], backgroundColor: '#EF4444' }]
+                }, commonBarOptions(dailyTargets.fat, '#EF4444'));
+                
+                updateDashboard();
+            }
+            
+            function renderMealCards() {
+                const container = document.getElementById('meal-cards-container');
+                container.innerHTML = '';
+                mealsData.forEach(meal => {
+                    const optionButtons = meal.options.length > 1 ? meal.options.map((opt, index) =>
+                        `<button data-meal-id="${meal.id}" data-option-index="${index}" class="option-btn text-sm py-1 px-3 rounded-full ${index === 0 ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'} transition-all">${opt.name}</button>`
+                    ).join('') : '';
+
+                    const mealOptionsContent = meal.options.map((opt, index) => `
+                        <div id="option-content-${meal.id}-${index}" class="option-content mt-4 ${index > 0 ? 'hidden' : ''}">
+                            <h4 class="font-semibold text-gray-700">${meal.options.length > 1 ? opt.name : ''}</h4>
+                            <ul class="text-sm text-gray-600 mt-2 space-y-1 list-disc list-inside">
+                                ${opt.details.map(d => `<li>${d}</li>`).join('')}
+                            </ul>
+                            <div class="text-xs mt-3 text-gray-500 grid grid-cols-4 gap-1 text-center">
+                                <span><span class="font-bold">${opt.macros.calories.toFixed(0)}</span> kcal</span>
+                                <span><span class="font-bold">${opt.macros.protein.toFixed(0)}</span>g P</span>
+                                <span><span class="font-bold">${opt.macros.carbs.toFixed(0)}</span>g C</span>
+                                <span><span class="font-bold">${opt.macros.fat.toFixed(0)}</span>g G</span>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    const card = `
+                        <div id="card-${meal.id}" class="meal-card bg-white p-5 rounded-2xl shadow-md border-2 border-transparent transition-all">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm font-medium text-emerald-700">${meal.time}</p>
+                                    <h3 class="text-xl font-bold text-gray-800">${meal.name}</h3>
+                                </div>
+                                <button id="log-btn-${meal.id}" data-meal-id="${meal.id}" class="log-meal-btn bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition-all disabled:bg-emerald-500 disabled:text-white disabled:cursor-not-allowed">
+                                    Registrar
+                                </button>
+                            </div>
+                            <div class="mt-4">
+                                <div class="flex flex-wrap gap-2">${optionButtons}</div>
+                                ${mealOptionsContent}
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML += card;
+                });
+            }
+            
+            function handleLogMeal(e) {
+                const mealId = e.target.dataset.mealId;
+                const meal = mealsData.find(m => m.id === mealId);
+                if (!meal || meal.logged) return;
+
+                let selectedOptionIndex = 0;
+                if (meal.options.length > 1) {
+                    const activeButton = document.querySelector(`#card-${mealId} .option-btn.bg-emerald-600`);
+                    selectedOptionIndex = parseInt(activeButton.dataset.optionIndex, 10);
+                }
+                
+                const macros = meal.options[selectedOptionIndex].macros;
+                
+                currentProgress.calories += macros.calories;
+                currentProgress.protein += macros.protein;
+                currentProgress.carbs += macros.carbs;
+                currentProgress.fat += macros.fat;
+                
+                meal.logged = true;
+                e.target.disabled = true;
+                e.target.textContent = 'Registrado ✓';
+                document.getElementById(`card-${mealId}`).classList.add('logged');
+
+                updateDashboard();
+            }
+
+            function handleOptionSwitch(e) {
+                if (!e.target.classList.contains('option-btn')) return;
+
+                const mealId = e.target.dataset.mealId;
+                const optionIndex = parseInt(e.target.dataset.optionIndex, 10);
+                
+                document.querySelectorAll(`#card-${mealId} .option-btn`).forEach(btn => {
+                    btn.classList.remove('bg-emerald-600', 'text-white');
+                    btn.classList.add('bg-gray-200', 'text-gray-700');
+                });
+                
+                e.target.classList.add('bg-emerald-600', 'text-white');
+                e.target.classList.remove('bg-gray-200', 'text-gray-700');
+
+                document.querySelectorAll(`#card-${mealId} .option-content`).forEach(content => {
+                    content.classList.add('hidden');
+                });
+
+                document.getElementById(`option-content-${mealId}-${optionIndex}`).classList.remove('hidden');
+            }
+            
+            document.getElementById('meal-cards-container').addEventListener('click', (e) => {
+                if (e.target.classList.contains('log-meal-btn')) {
+                    handleLogMeal(e);
+                } else if (e.target.classList.contains('option-btn')) {
+                    handleOptionSwitch(e);
+                }
+            });
+
+            document.getElementById('toggle-guidelines-btn').addEventListener('click', () => {
+                document.getElementById('guidelines-content').classList.toggle('hidden');
+            });
+
+            renderMealCards();
+            initializeDashboard();
+        });
+    </script>
+</body>
+</html>
