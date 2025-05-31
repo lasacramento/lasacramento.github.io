@@ -31,12 +31,20 @@
         }
         .macro-chart-container {
             position: relative;
-            height: 200px;
+            height: 150px; /* Adjusted height for smaller doughnut charts */
             width: 100%;
+            max-width: 200px; /* Max width for smaller doughnut charts */
+            margin: auto; /* Center the macro charts */
         }
         .meal-card.logged {
             border-color: #10B981;
             background-color: #F0FDF4;
+        }
+        .chart-label {
+            text-align: center;
+            font-weight: 600;
+            margin-top: 8px;
+            color: #4B5563;
         }
     </style>
 </head>
@@ -54,16 +62,26 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                 <div class="chart-container">
                     <canvas id="caloriesChart"></canvas>
+                    <div class="chart-label">Calorias</div>
                 </div>
-                <div class="grid grid-cols-1 gap-6">
-                    <div class="macro-chart-container">
-                        <canvas id="proteinChart"></canvas>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div>
+                        <div class="macro-chart-container">
+                            <canvas id="proteinChart"></canvas>
+                        </div>
+                        <div class="chart-label">Proteína</div>
                     </div>
-                    <div class="macro-chart-container">
-                        <canvas id="carbsChart"></canvas>
+                    <div>
+                        <div class="macro-chart-container">
+                            <canvas id="carbsChart"></canvas>
+                        </div>
+                        <div class="chart-label">Carboidratos</div>
                     </div>
-                    <div class="macro-chart-container">
-                        <canvas id="fatChart"></canvas>
+                    <div>
+                        <div class="macro-chart-container">
+                            <canvas id="fatChart"></canvas>
+                        </div>
+                        <div class="chart-label">Gorduras</div>
                     </div>
                 </div>
             </div>
@@ -190,20 +208,28 @@
             const centerTextPlugin = {
                 id: 'centerText',
                 beforeDraw(chart) {
-                    if (chart.canvas.id === 'caloriesChart') {
-                        const { ctx, width, height } = chart;
-                        ctx.restore();
-                        const fontSize = (height / 114).toFixed(2);
-                        ctx.font = `${fontSize}em Inter`;
-                        ctx.textBaseline = 'middle';
-                        ctx.fillStyle = '#333'; // Cor do texto
+                    const { ctx, width, height } = chart;
+                    ctx.restore();
+                    const fontSize = (height / 114).toFixed(2);
+                    ctx.font = `${fontSize}em Inter`;
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = '#333'; // Cor do texto
 
-                        const text = `${currentProgress.calories.toFixed(0)} kcal`;
-                        const textX = (width - ctx.measureText(text).width) / 2;
-                        const textY = height / 2;
-                        ctx.fillText(text, textX, textY);
-                        ctx.save();
+                    let text;
+                    if (chart.canvas.id === 'caloriesChart') {
+                        text = `${currentProgress.calories.toFixed(0)} kcal`;
+                    } else {
+                        const macroType = chart.canvas.id.replace('Chart', '');
+                        const currentVal = currentProgress[macroType];
+                        const targetVal = dailyTargets[macroType];
+                        const percentage = targetVal > 0 ? (currentVal / targetVal * 100).toFixed(0) : 0;
+                        text = `${percentage}%`;
                     }
+                    
+                    const textX = (width - ctx.measureText(text).width) / 2;
+                    const textY = height / 2;
+                    ctx.fillText(text, textX, textY);
+                    ctx.save();
                 }
             };
             Chart.register(centerTextPlugin);
@@ -221,43 +247,49 @@
                 charts.calories.data.labels[0] = `Consumido: ${calories.toFixed(0)} kcal`;
                 charts.calories.update();
                 
-                charts.protein.data.datasets[0].data = [protein];
+                charts.protein.data.datasets[0].data = [protein, Math.max(0, protTarget - protein)];
                 charts.protein.update();
 
-                charts.carbs.data.datasets[0].data = [carbs];
+                charts.carbs.data.datasets[0].data = [carbs, Math.max(0, carbTarget - carbs)];
                 charts.carbs.update();
 
-                charts.fat.data.datasets[0].data = [fat];
+                charts.fat.data.datasets[0].data = [fat, Math.max(0, fatTarget - fat)];
                 charts.fat.update();
             }
 
             function initializeDashboard() {
-                const commonBarOptions = (target, labelColor) => ({
-                    indexAxis: 'y',
+                const doughnutOptions = (target, primaryColor, secondaryColor) => ({
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: {
-                        x: { beginAtZero: true, max: target, display: false },
-                        y: { display: false }
-                    },
+                    cutout: '70%',
                     plugins: {
                         legend: { display: false },
                         tooltip: {
                             enabled: true,
                             callbacks: {
                                 title: () => '',
-                                label: (context) => `${context.dataset.label}: ${context.raw.toFixed(0)}g / ${target}g`
+                                label: (context) => {
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
+                                    const percentage = total > 0 ? (value / total * 100).toFixed(0) : 0;
+                                    const label = context.label === 'Consumido' ? 'Consumido' : 'Restante';
+                                    return `${label}: ${value.toFixed(0)}g (${percentage}%)`;
+                                }
                             }
                         },
                         datalabels: {
-                            color: '#fff', // Cor do texto do rótulo
-                            anchor: 'end', // Posição do rótulo (no final da barra)
-                            align: 'end', // Alinhamento do rótulo
-                            formatter: (value) => `${value.toFixed(0)}g`, // Formato do texto do rótulo
+                            color: '#fff', 
+                            formatter: (value, context) => {
+                                const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
+                                const percentage = total > 0 ? (value / total * 100).toFixed(0) : 0;
+                                return context.dataIndex === 0 ? `${percentage}%` : ''; // Only show percentage for the consumed part
+                            },
                             font: {
-                                weight: 'bold'
+                                weight: 'bold',
+                                size: 16
                             }
-                        }
+                        },
+                        centerText: {} 
                     }
                 });
 
@@ -276,25 +308,54 @@
                     cutout: '70%',
                     plugins: {
                         legend: { display: false },
-                        tooltip: { enabled: true },
-                        centerText: {} // Ativar o plugin de texto central
+                        tooltip: { 
+                            enabled: true,
+                            callbacks: {
+                                label: (context) => {
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
+                                    const percentage = total > 0 ? (value / total * 100).toFixed(0) : 0;
+                                    const label = context.label === 'Consumido' ? 'Consumido' : 'Restante';
+                                    return `${label}: ${value.toFixed(0)} kcal (${percentage}%)`;
+                                }
+                            }
+                        },
+                        centerText: {} 
                     }
                 });
                 
-                charts.protein = createChart(document.getElementById('proteinChart').getContext('2d'), 'bar', {
-                    labels: ['Proteína'],
-                    datasets: [{ label: 'Proteína', data: [0], backgroundColor: '#3B82F6' }]
-                }, commonBarOptions(dailyTargets.protein, '#3B82F6'));
+                charts.protein = createChart(document.getElementById('proteinChart').getContext('2d'), 'doughnut', {
+                    labels: ['Consumido', 'Restante'],
+                    datasets: [{ 
+                        data: [0, dailyTargets.protein], 
+                        backgroundColor: ['#3B82F6', '#BFDBFE'], // Blue shades
+                        borderColor: '#f8f7f4',
+                        borderWidth: 4,
+                        hoverOffset: 4
+                    }]
+                }, doughnutOptions(dailyTargets.protein, '#3B82F6', '#BFDBFE'));
                 
-                charts.carbs = createChart(document.getElementById('carbsChart').getContext('2d'), 'bar', {
-                    labels: ['Carboidratos'],
-                    datasets: [{ label: 'Carboidratos', data: [0], backgroundColor: '#F59E0B' }]
-                }, commonBarOptions(dailyTargets.carbs, '#F59E0B'));
+                charts.carbs = createChart(document.getElementById('carbsChart').getContext('2d'), 'doughnut', {
+                    labels: ['Consumido', 'Restante'],
+                    datasets: [{ 
+                        data: [0, dailyTargets.carbs], 
+                        backgroundColor: ['#F59E0B', '#FDE68A'], // Orange/Yellow shades
+                        borderColor: '#f8f7f4',
+                        borderWidth: 4,
+                        hoverOffset: 4
+                    }]
+                }, doughnutOptions(dailyTargets.carbs, '#F59E0B', '#FDE68A'));
 
-                charts.fat = createChart(document.getElementById('fatChart').getContext('2d'), 'bar', {
-                    labels: ['Gorduras'],
-                    datasets: [{ label: 'Gorduras', data: [0], backgroundColor: '#EF4444' }]
-                }, commonBarOptions(dailyTargets.fat, '#EF4444'));
+                charts.fat = createChart(document.getElementById('fatChart').getContext('2d'), 'doughnut', {
+                    labels: ['Consumido', 'Restante'],
+                    datasets: [{ 
+                        data: [0, dailyTargets.fat], 
+                        backgroundColor: ['#EF4444', '#FECACA'], // Red shades
+                        borderColor: '#f8f7f4',
+                        borderWidth: 4,
+                        hoverOffset: 4
+                    }]
+                }, doughnutOptions(dailyTargets.fat, '#EF4444', '#FECACA'));
                 
                 updateDashboard();
             }
