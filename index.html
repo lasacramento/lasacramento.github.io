@@ -3,469 +3,469 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plano Alimentar Interativo - Laio Sacramento</title>
+    <title>Calculadora de Deformação de Viga</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8f7f4; 
-            color: #333;
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
-        .chart-container {
-            position: relative;
-            margin: auto;
-            height: 30vh;
+        .container {
+            max-width: 800px;
             width: 100%;
-            max-width: 400px;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
-        @media (min-width: 768px) {
-            .chart-container {
-                height: 35vh;
-                max-width: 450px;
-            }
+        .input-group {
+            margin-bottom: 0px; /* Reduced margin for better spacing with new layout */
         }
-        .macro-chart-container {
-            position: relative;
-            height: 150px; /* Adjusted height for smaller doughnut charts */
-            width: 100%;
-            max-width: 200px; /* Max width for smaller doughnut charts */
-            margin: auto; /* Center the macro charts */
-        }
-        .meal-card.logged {
-            border-color: #10B981;
-            background-color: #F0FDF4;
-        }
-        .chart-label {
-            text-align: center;
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
             font-weight: 600;
-            margin-top: 8px;
-            color: #4B5563;
+            color: #334155;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 1rem;
+            color: #1e293b;
+            transition: border-color 0.2s ease-in-out;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+        .btn-calculate {
+            width: 100%;
+            padding: 14px;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.125rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+        }
+        .btn-calculate:hover {
+            background-color: #2563eb;
+            transform: translateY(-2px);
+        }
+        .btn-calculate:active {
+            background-color: #1d4ed8;
+            transform: translateY(0);
+        }
+        .result-box {
+            margin-top: 10px; /* Adjusted margin */
+            padding: 20px;
+            background-color: #e0f2fe;
+            border-radius: 8px;
+            border: 1px solid #93c5fd;
+            color: #1e40af;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        .error-message {
+            margin-top: 10px; /* Adjusted margin */
+            padding: 15px;
+            background-color: #fee2e2;
+            border-radius: 8px;
+            border: 1px solid #ef4444;
+            color: #dc2626;
+            font-size: 1rem;
+            font-weight: 500;
+            text-align: center;
+        }
+        canvas {
+            width: 100%;
+            height: auto;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        #deflectionDisplay {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #ecfdf5;
+            border-radius: 8px;
+            border: 1px solid #34d399;
+            color: #065f46;
+            font-size: 1rem;
+            text-align: center;
+            font-weight: 500;
+            min-height: 40px; /* Ensure space even when hidden */
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
 </head>
-<body class="antialiased">
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-4">Calculadora de Deformação de Viga Cantilever</h1>
 
-    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
-
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Plano Alimentar Interativo</h1>
-            <p class="text-lg text-gray-600 mt-2">Olá, Laio! Acompanhe seu progresso diário aqui.</p>
-        </header>
-
-        <section id="dashboard" class="mb-10 bg-white p-6 rounded-2xl shadow-lg">
-            <h2 class="text-2xl font-bold text-center mb-4 text-gray-800">Resumo Diário</h2>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                <div class="chart-container">
-                    <canvas id="caloriesChart"></canvas>
-                    <div class="chart-label">Calorias</div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    <div>
-                        <div class="macro-chart-container">
-                            <canvas id="proteinChart"></canvas>
-                        </div>
-                        <div class="chart-label">Proteína</div>
-                    </div>
-                    <div>
-                        <div class="macro-chart-container">
-                            <canvas id="carbsChart"></canvas>
-                        </div>
-                        <div class="chart-label">Carboidratos</div>
-                    </div>
-                    <div>
-                        <div class="macro-chart-container">
-                            <canvas id="fatChart"></canvas>
-                        </div>
-                        <div class="chart-label">Gorduras</div>
-                    </div>
-                </div>
+        <div class="input-grid grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="input-group">
+                <label for="length">Comprimento da Viga (L) [metros]:</label>
+                <input type="number" id="length" placeholder="Ex: 5" step="any" value="5">
             </div>
-        </section>
 
-        <section id="meal-plan">
-            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800">Refeições do Dia</h2>
-            <div id="meal-cards-container" class="space-y-6">
+            <div class="input-group">
+                <label for="base">Base da Seção (b) [metros]:</label>
+                <input type="number" id="base" placeholder="Ex: 0.3" step="any" value="0.3">
             </div>
-        </section>
 
-        <section id="guidelines" class="mt-10">
-            <div class="text-center">
-                <button id="toggle-guidelines-btn" class="bg-emerald-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:bg-emerald-700 transition-all">
-                    Ver Orientações Importantes
-                </button>
+            <div class="input-group">
+                <label for="height">Altura da Seção (h) [metros]:</label>
+                <input type="number" id="height" placeholder="Ex: 0.6" step="any" value="0.6">
             </div>
-            <div id="guidelines-content" class="hidden mt-6 bg-white p-6 rounded-2xl shadow-lg">
-                <ul class="space-y-4 text-gray-700 list-disc list-inside">
-                    <li>**Hidratação:** Beba bastante água ao longo do dia, no mínimo 2-3 litros, especialmente devido aos treinos.</li>
-                    <li>**Consistência:** A chave para o ganho de massa muscular é a consistência. Tente seguir o plano o máximo possível, mesmo que haja pequenos desvios ocasionalmente.</li>
-                    <li>**Planejamento:** Prepare suas refeições com antecedência (marmitas) para facilitar a adesão à dieta em sua rotina de trabalho.</li>
-                    <li>**Monitoramento:** Monitore seu peso semanalmente e tire medidas corporais a cada 15 dias. Isso nos ajudará a entender como seu corpo está respondendo e a fazer ajustes.</li>
-                    <li>**Qualidade dos Alimentos:** Priorize alimentos frescos e minimamente processados.</li>
-                    <li>**Flexibilidade:** Este plano é um guia. Se um alimento não estiver disponível, tente substituí-lo por outro com perfil de macronutrientes semelhante.</li>
-                    <li>**Variação:** Varie os vegetais e as fontes de carboidratos complexos (além do arroz e batata) para garantir a ingestão de diversos micronutrientes.</li>
-                    <li>**Precisão:** Para maior precisão, utilize uma balança de cozinha para pesar os alimentos, especialmente no início.</li>
-                </ul>
+
+            <div class="input-group">
+                <label for="load">Carga Aplicada (P) [Newtons]:</label>
+                <input type="number" id="load" placeholder="Ex: 10000" step="any" value="10000">
             </div>
-        </section>
 
-        <footer class="text-center mt-12 text-sm text-gray-500">
-            <p>Plano válido por 60 dias a partir de 31 de Maio de 2025.</p>
-            <p class="mt-1">Este plano alimentar é uma sugestão e não substitui a consulta individualizada com um profissional de saúde.</p>
-        </footer>
+            <div class="input-group">
+                <label for="elasticity">Módulo de Elasticidade (E) [Pascals]:</label>
+                <input type="number" id="elasticity" placeholder="Ex: 30e9" step="any" value="30e9">
+            </div>
 
+            <div class="input-group">
+                <label for="pointX">Ponto de Estudo (x) [metros, de 0 (extremidade livre) a L (engaste)]:</label>
+                <input type="number" id="pointX" placeholder="Ex: 0 (extremidade livre)" step="any" value="0">
+            </div>
+        </div>
+        
+        <button class="btn-calculate" onclick="calculateDeflectionAndDraw()">Calcular e Desenhar</button>
+
+        <div id="result" class="result-box hidden">
+            <p>A deformação no ponto x (da extremidade livre) é: <span id="deflectionValue"></span> metros.</p>
+        </div>
+
+        <div id="errorMessage" class="error-message hidden"></div>
+
+        <canvas id="beamCanvas"></canvas>
+        <div id="deflectionDisplay" class="hidden"></div>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        const canvas = document.getElementById('beamCanvas');
+        const ctx = canvas.getContext('2d');
+        const deflectionDisplay = document.getElementById('deflectionDisplay');
 
-            const dailyTargets = {
-                calories: 2790,
-                protein: 116,
-                carbs: 451,
-                fat: 58
-            };
+        // Global variables to store current beam properties for drawing
+        let currentL = 0;
+        let currentP = 0;
+        let currentE = 0;
+        let currentI = 0;
 
-            let currentProgress = {
-                calories: 0,
-                protein: 0,
-                carbs: 0,
-                fat: 0
-            };
+        /**
+         * Calculates the deflection of a cantilever beam.
+         * The formula used expects 'x' to be measured from the fixed end.
+         * @param {number} x_from_fixed_end - The distance from the fixed end.
+         * @param {number} L_val - The total length of the beam.
+         * @param {number} P_val - The applied load at the free end.
+         * @param {number} E_val - The modulus of elasticity.
+         * @param {number} I_val - The moment of inertia.
+         * @returns {number} The calculated deflection.
+         */
+        function getDeflectionValue(x_from_fixed_end, L_val, P_val, E_val, I_val) {
+            if (E_val === 0 || I_val === 0) return 0; // Avoid division by zero
+            // The updated formula: v = P/6EI * (-x^3 + 3L^2*x -2L^3)
+            // 'x' in this formula is assumed to be measured from the fixed end.
+            const deflection = (P_val / (6 * E_val * I_val)) * (-Math.pow(x_from_fixed_end, 3) + 3 * Math.pow(L_val, 2) * x_from_fixed_end - 2 * Math.pow(L_val, 3));
+            return deflection;
+        }
 
-            const mealsData = [
-                {
-                    id: 'cafe',
-                    time: '6:30h',
-                    name: 'Café da Manhã',
-                    logged: false,
-                    options: [
-                        { name: 'Pão com Ovo e Leite com Café', macros: { protein: 19, carbs: 58, fat: 16, calories: 480 }, details: ['Ovos: 120g (2 u.)', 'Pão integral: 100g (3 fatias)', 'Leite integral: 200ml', 'Azeite de oliva: 10ml', 'Açúcar (opcional): 10g'] },
-                        { name: 'Vitamina Hipercalórica', macros: { protein: 30, carbs: 140, fat: 10, calories: 770 }, details: ['Leite integral: 300ml', 'Hipercalórico em pó: 100g', 'Aveia em flocos: 60g', 'Banana: 200g (1 u.)'] }
-                    ]
-                },
-                {
-                    id: 'lanche1',
-                    time: '9:30h',
-                    name: 'Lanche da Manhã',
-                    logged: false,
-                    options: [
-                        { name: 'Whey Protein com Maçã', macros: { protein: 32, carbs: 20, fat: 1, calories: 145 }, details: ['Whey protein: 40g (com água)', 'Maçã média: 150g'] },
-                        { name: 'Empada de Frango', macros: { protein: 15, carbs: 20, fat: 18, calories: 320 }, details: ['Empada de frango: 1 unidade média (100g)'] },
-                        { name: 'Sanduíche Natural', macros: { protein: 22, carbs: 37, fat: 15, calories: 360 }, details: ['Pão integral: 60g (2 fatias)', 'Maionese: 15g (1 colher)', 'Milho: 30g (2 colheres)', 'Frango desfiado: 50g'] }
-                    ]
-                },
-                {
-                    id: 'almoco',
-                    time: '12:30h',
-                    name: 'Almoço',
-                    logged: false,
-                    options: [
-                        { name: 'Frango Grelhado', macros: { protein: 49, carbs: 40, fat: 10.5, calories: 400 }, details: ['Frango grelhado: 150g', 'Arroz branco cozido: 100g', 'Purê de batata: 100g', 'Azeite de oliva: 5ml'] },
-                        { name: 'Carne com Macarrão', macros: { protein: 35, carbs: 52, fat: 21, calories: 530 }, details: ['Carne de panela magra: 150g', 'Macarrão cozido: 200g', 'Molho branco caseiro: 100g', 'Queijo parmesão (opcional): 10g'] }
-                    ]
-                },
-                {
-                    id: 'lanche2',
-                    time: '16:00h',
-                    name: 'Lanche da Tarde',
-                    logged: false,
-                    options: [
-                        { name: 'Hipercalórico com Banana', macros: { protein: 11, carbs: 62, fat: 5, calories: 330 }, details: ['Dose de hipercalórico: 50g', 'Banana média: 120g'] },
-                        { name: 'Empada de Frango', macros: { protein: 15, carbs: 20, fat: 18, calories: 320 }, details: ['Empada de frango: 1 unidade média (100g)'] },
-                        { name: 'Sanduíche Natural', macros: { protein: 22, carbs: 37, fat: 15, calories: 360 }, details: ['Pão integral: 60g (2 fatias)', 'Maionese: 15g (1 colher)', 'Milho: 30g (2 colheres)', 'Frango desfiado: 50g'] }
-                    ]
-                },
-                {
-                    id: 'pos_treino',
-                    time: '18:00h',
-                    name: 'Pós-Treino',
-                    logged: false,
-                    options: [
-                        { name: 'Vitamina Hipercalórica', macros: { protein: 30, carbs: 140, fat: 10, calories: 770 }, details: ['Leite integral: 300ml', 'Hipercalórico em pó: 100g', 'Aveia em flocos: 60g', 'Banana: 200g (1 u.)'] }
-                    ]
-                },
-                {
-                    id: 'jantar',
-                    time: '21:00h',
-                    name: 'Jantar/Ceia',
-                    logged: false,
-                    options: [
-                        { name: 'Ovos com Batata Doce', macros: { protein: 22, carbs: 24, fat: 24, calories: 380 }, details: ['Ovos cozidos: 180g (3 u.)', 'Salada grande: A gosto', 'Azeite de oliva: 10ml', 'Batata doce cozida: 80g'] },
-                        { name: 'Macarronada', macros: { protein: 15, carbs: 50, fat: 10, calories: 370 }, details: ['Macarronada: 250g (porção média com molho simples)'] },
-                        { name: 'Misto Quente', macros: { protein: 23, carbs: 32, fat: 10, calories: 310 }, details: ['Pão integral: 60g (2 fatias)', 'Queijo muçarela: 30g (2 fatias)', 'Peito de peru: 50g (2 fatias)'] }
-                    ]
-                }
-            ];
+        function calculateDeflectionAndDraw() {
+            // Get input values
+            const L = parseFloat(document.getElementById('length').value);
+            const b = parseFloat(document.getElementById('base').value);
+            const h = parseFloat(document.getElementById('height').value);
+            const P = parseFloat(document.getElementById('load').value);
+            const E = parseFloat(document.getElementById('elasticity').value);
+            // 'x_input_free_end' is the user's 'x' measured from the free end.
+            const x_input_free_end = parseFloat(document.getElementById('pointX').value);
 
-            const charts = {};
+            // Get result and error elements
+            const resultBox = document.getElementById('result');
+            const errorMessage = document.getElementById('errorMessage');
+            const deflectionValueSpan = document.getElementById('deflectionValue');
 
-            // Plugin para exibir texto no centro do gráfico de calorias (doughnut)
-            const centerTextPlugin = {
-                id: 'centerText',
-                beforeDraw(chart) {
-                    const { ctx, width, height } = chart;
-                    ctx.restore();
-                    const fontSize = (height / 114).toFixed(2);
-                    ctx.font = `${fontSize}em Inter`;
-                    ctx.textBaseline = 'middle';
-                    ctx.fillStyle = '#333'; // Cor do texto
+            // Hide previous results/errors and display
+            resultBox.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+            errorMessage.textContent = '';
+            deflectionDisplay.classList.add('hidden');
+            deflectionDisplay.textContent = '';
 
-                    let text;
-                    if (chart.canvas.id === 'caloriesChart') {
-                        text = `${currentProgress.calories.toFixed(0)} kcal`;
-                    } else {
-                        const macroType = chart.canvas.id.replace('Chart', '');
-                        const currentVal = currentProgress[macroType];
-                        const targetVal = dailyTargets[macroType];
-                        const percentage = targetVal > 0 ? (currentVal / targetVal * 100).toFixed(0) : 0;
-                        text = `${percentage}%`;
-                    }
-                    
-                    const textX = (width - ctx.measureText(text).width) / 2;
-                    const textY = height / 2;
-                    ctx.fillText(text, textX, textY);
-                    ctx.save();
-                }
-            };
-            Chart.register(centerTextPlugin);
-            Chart.register(ChartDataLabels); // Registrar o plugin de data labels
 
-            function createChart(ctx, type, data, options) {
-                return new Chart(ctx, { type, data, options });
+            // Input validation
+            if (isNaN(L) || isNaN(b) || isNaN(h) || isNaN(P) || isNaN(E) || isNaN(x_input_free_end)) {
+                errorMessage.textContent = 'Por favor, preencha todos os campos com valores numéricos válidos.';
+                errorMessage.classList.remove('hidden');
+                return;
             }
 
-            function updateDashboard() {
-                const { calories, protein, carbs, fat } = currentProgress;
-                const { calories: calTarget, protein: protTarget, carbs: carbTarget, fat: fatTarget } = dailyTargets;
-
-                charts.calories.data.datasets[0].data = [calories, Math.max(0, calTarget - calories)];
-                charts.calories.data.labels[0] = `Consumido: ${calories.toFixed(0)} kcal`;
-                charts.calories.update();
-                
-                charts.protein.data.datasets[0].data = [protein, Math.max(0, protTarget - protein)];
-                charts.protein.update();
-
-                charts.carbs.data.datasets[0].data = [carbs, Math.max(0, carbTarget - carbs)];
-                charts.carbs.update();
-
-                charts.fat.data.datasets[0].data = [fat, Math.max(0, fatTarget - fat)];
-                charts.fat.update();
+            if (L <= 0 || b <= 0 || h <= 0 || E <= 0) {
+                errorMessage.textContent = 'Comprimento, base, altura e elasticidade devem ser valores positivos.';
+                errorMessage.classList.remove('hidden');
+                return;
             }
 
-            function initializeDashboard() {
-                const doughnutOptions = (target, primaryColor, secondaryColor) => ({
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '70%',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            enabled: true,
-                            callbacks: {
-                                title: () => '',
-                                label: (context) => {
-                                    const value = context.raw;
-                                    const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
-                                    const percentage = total > 0 ? (value / total * 100).toFixed(0) : 0;
-                                    const label = context.label === 'Consumido' ? 'Consumido' : 'Restante';
-                                    return `${label}: ${value.toFixed(0)}g (${percentage}%)`;
-                                }
-                            }
-                        },
-                        datalabels: {
-                            color: '#fff', 
-                            formatter: (value, context) => {
-                                const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
-                                const percentage = total > 0 ? (value / total * 100).toFixed(0) : 0;
-                                return context.dataIndex === 0 ? `${percentage}%` : ''; // Only show percentage for the consumed part
-                            },
-                            font: {
-                                weight: 'bold',
-                                size: 16
-                            }
-                        },
-                        centerText: {} 
-                    }
-                });
-
-                charts.calories = createChart(document.getElementById('caloriesChart').getContext('2d'), 'doughnut', {
-                    labels: ['Consumido', 'Restante'],
-                    datasets: [{
-                        data: [0, dailyTargets.calories],
-                        backgroundColor: ['#10B981', '#E5E7EB'],
-                        borderColor: '#f8f7f4',
-                        borderWidth: 4,
-                        hoverOffset: 4
-                    }]
-                }, {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '70%',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { 
-                            enabled: true,
-                            callbacks: {
-                                label: (context) => {
-                                    const value = context.raw;
-                                    const total = context.dataset.data.reduce((sum, val) => sum + val, 0);
-                                    const percentage = total > 0 ? (value / total * 100).toFixed(0) : 0;
-                                    const label = context.label === 'Consumido' ? 'Consumido' : 'Restante';
-                                    return `${label}: ${value.toFixed(0)} kcal (${percentage}%)`;
-                                }
-                            }
-                        },
-                        centerText: {} 
-                    }
-                });
-                
-                charts.protein = createChart(document.getElementById('proteinChart').getContext('2d'), 'doughnut', {
-                    labels: ['Consumido', 'Restante'],
-                    datasets: [{ 
-                        data: [0, dailyTargets.protein], 
-                        backgroundColor: ['#3B82F6', '#BFDBFE'], // Blue shades
-                        borderColor: '#f8f7f4',
-                        borderWidth: 4,
-                        hoverOffset: 4
-                    }]
-                }, doughnutOptions(dailyTargets.protein, '#3B82F6', '#BFDBFE'));
-                
-                charts.carbs = createChart(document.getElementById('carbsChart').getContext('2d'), 'doughnut', {
-                    labels: ['Consumido', 'Restante'],
-                    datasets: [{ 
-                        data: [0, dailyTargets.carbs], 
-                        backgroundColor: ['#F59E0B', '#FDE68A'], // Orange/Yellow shades
-                        borderColor: '#f8f7f4',
-                        borderWidth: 4,
-                        hoverOffset: 4
-                    }]
-                }, doughnutOptions(dailyTargets.carbs, '#F59E0B', '#FDE68A'));
-
-                charts.fat = createChart(document.getElementById('fatChart').getContext('2d'), 'doughnut', {
-                    labels: ['Consumido', 'Restante'],
-                    datasets: [{ 
-                        data: [0, dailyTargets.fat], 
-                        backgroundColor: ['#EF4444', '#FECACA'], // Red shades
-                        borderColor: '#f8f7f4',
-                        borderWidth: 4,
-                        hoverOffset: 4
-                    }]
-                }, doughnutOptions(dailyTargets.fat, '#EF4444', '#FECACA'));
-                
-                updateDashboard();
+            // Validate x_input_free_end (from 0 at free end to L at fixed end)
+            if (x_input_free_end < 0 || x_input_free_end > L) {
+                errorMessage.textContent = 'O ponto de estudo (x) deve estar entre 0 (extremidade livre) e L (engaste).';
+                errorMessage.classList.remove('hidden');
+                return;
             }
             
-            function renderMealCards() {
-                const container = document.getElementById('meal-cards-container');
-                container.innerHTML = '';
-                mealsData.forEach(meal => {
-                    const optionButtons = meal.options.length > 1 ? meal.options.map((opt, index) =>
-                        `<button data-meal-id="${meal.id}" data-option-index="${index}" class="option-btn text-sm py-1 px-3 rounded-full ${index === 0 ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'} transition-all">${opt.name}</button>`
-                    ).join('') : '';
+            // Calculate moment of inertia (I) for a rectangular section
+            // I = (b * h^3) / 12
+            const I = (b * Math.pow(h, 3)) / 12;
 
-                    const mealOptionsContent = meal.options.map((opt, index) => `
-                        <div id="option-content-${meal.id}-${index}" class="option-content mt-4 ${index > 0 ? 'hidden' : ''}">
-                            <h4 class="font-semibold text-gray-700">${meal.options.length > 1 ? opt.name : ''}</h4>
-                            <ul class="text-sm text-gray-600 mt-2 space-y-1 list-disc list-inside">
-                                ${opt.details.map(d => `<li>${d}</li>`).join('')}
-                            </ul>
-                            <div class="text-xs mt-3 text-gray-500 grid grid-cols-4 gap-1 text-center">
-                                <span><span class="font-bold">${opt.macros.calories.toFixed(0)}</span> kcal</span>
-                                <span><span class="font-bold">${opt.macros.protein.toFixed(0)}</span>g P</span>
-                                <span><span class="font-bold">${opt.macros.carbs.toFixed(0)}</span>g C</span>
-                                <span><span class="font-bold">${opt.macros.fat.toFixed(0)}</span>g G</span>
-                            </div>
-                        </div>
-                    `).join('');
+            // Store current parameters for drawing
+            currentL = L;
+            currentP = P;
+            currentE = E;
+            currentI = I;
 
-                    const card = `
-                        <div id="card-${meal.id}" class="meal-card bg-white p-5 rounded-2xl shadow-md border-2 border-transparent transition-all">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <p class="text-sm font-medium text-emerald-700">${meal.time}</p>
-                                    <h3 class="text-xl font-bold text-gray-800">${meal.name}</h3>
-                                </div>
-                                <button id="log-btn-${meal.id}" data-meal-id="${meal.id}" class="log-meal-btn bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition-all disabled:bg-emerald-500 disabled:text-white disabled:cursor-not-allowed">
-                                    Registrar
-                                </button>
-                            </div>
-                            <div class="mt-4">
-                                <div class="flex flex-wrap gap-2">${optionButtons}</div>
-                                ${mealOptionsContent}
-                            </div>
-                        </div>
-                    `;
-                    container.innerHTML += card;
-                });
+            // Convert user's 'x' (from free end) to 'x' measured from the fixed end for the formula
+            const x_for_formula = L - x_input_free_end;
+
+            // Calculate deflection for the specific 'x' from input
+            const deflectionAtX = getDeflectionValue(x_for_formula, L, P, E, I);
+
+            // Display the result for the specific 'x'
+            deflectionValueSpan.textContent = deflectionAtX.toExponential(4); // Use scientific notation for clarity
+            resultBox.classList.remove('hidden');
+
+            // Draw the beam and deflection curve
+            drawBeamAndDeflection();
+        }
+
+        function drawBeamAndDeflection() {
+            if (currentL === 0 || currentP === 0 || currentE === 0 || currentI === 0) {
+                // Don't draw if parameters are not set or invalid
+                return;
             }
-            
-            function handleLogMeal(e) {
-                const mealId = e.target.dataset.mealId;
-                const meal = mealsData.find(m => m.id === mealId);
-                if (!meal || meal.logged) return;
 
-                let selectedOptionIndex = 0;
-                if (meal.options.length > 1) {
-                    const activeButton = document.querySelector(`#card-${mealId} .option-btn.bg-emerald-600`);
-                    selectedOptionIndex = parseInt(activeButton.dataset.optionIndex, 10);
+            // Set canvas resolution for drawing
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 300; // Fixed height for visualization
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+
+            const beamLengthPx = canvas.width * 0.8; // Use 80% of canvas width for beam
+            const beamStartX = (canvas.width - beamLengthPx) / 2; // Left side of the beam drawing
+            const beamBaseY = canvas.height / 2; // Mid-height of canvas
+
+            // --- Draw Fixed Support (Engaste) on the RIGHT side ---
+            ctx.strokeStyle = '#334155';
+            ctx.fillStyle = '#64748b';
+            const wallWidth = 20;
+            const wallHeight = 80;
+            // Position at the right end of the beam drawing
+            ctx.fillRect(beamStartX + beamLengthPx, beamBaseY - wallHeight / 2, wallWidth, wallHeight);
+            // Hatching for fixed support
+            ctx.beginPath();
+            for (let i = 0; i < wallHeight / 10; i++) {
+                ctx.moveTo(beamStartX + beamLengthPx, beamBaseY - wallHeight / 2 + i * 10);
+                ctx.lineTo(beamStartX + beamLengthPx + wallWidth, beamBaseY - wallHeight / 2 + i * 10 + 10);
+            }
+            ctx.stroke();
+
+            // --- Draw Beam ---
+            ctx.beginPath();
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 4;
+            ctx.moveTo(beamStartX, beamBaseY); // Start at left (free end)
+            ctx.lineTo(beamStartX + beamLengthPx, beamBaseY); // End at right (fixed end)
+            ctx.stroke();
+
+            // --- Draw Load (P) at the free end (LEFT side) ---
+            ctx.beginPath();
+            ctx.strokeStyle = '#ef4444';
+            ctx.fillStyle = '#ef4444';
+            ctx.lineWidth = 2;
+            const arrowHeadSize = 10;
+            // Line at the free end (left side of the beam)
+            ctx.moveTo(beamStartX, beamBaseY - 30);
+            ctx.lineTo(beamStartX, beamBaseY);
+            // Arrowhead
+            ctx.moveTo(beamStartX, beamBaseY);
+            ctx.lineTo(beamStartX - arrowHeadSize / 2, beamBaseY - arrowHeadSize);
+            ctx.moveTo(beamStartX, beamBaseY);
+            ctx.lineTo(beamStartX + arrowHeadSize / 2, beamBaseY - arrowHeadSize);
+            ctx.stroke();
+            ctx.font = '14px Inter';
+            ctx.fillText('P', beamStartX - 20, beamBaseY - 20); // Label 'P' to the left of the load
+
+            // --- Draw L and X labels ---
+            ctx.fillStyle = '#475569';
+            ctx.font = '12px Inter';
+            ctx.fillText('L', beamStartX + beamLengthPx / 2, beamBaseY + 20); // Label for L
+            ctx.fillText('x=0', beamStartX - 10, beamBaseY + 15); // x=0 at free end (left)
+            ctx.fillText('x=L', beamStartX + beamLengthPx - 10, beamBaseY + 15); // x=L at fixed end (right)
+
+
+            // --- Plot Deflection Curve ---
+            ctx.beginPath();
+            ctx.strokeStyle = '#3b82f6';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 5]); // Dashed line for deflection
+
+            // Determine max deflection for scaling
+            let maxDeflection = 0;
+            // Iterate through a finer resolution for better curve plotting
+            for (let i = 0; i <= 100; i++) {
+                const x_normalized_canvas = i / 100; // x from 0 (left) to 1 (right) on canvas
+                // Convert canvas X (left-to-right) to formula's X (fixed-to-free, fixed end is right)
+                const x_actual_from_fixed_end = (1 - x_normalized_canvas) * currentL;
+                const deflection = getDeflectionValue(x_actual_from_fixed_end, currentL, currentP, currentE, currentI);
+                if (Math.abs(deflection) > maxDeflection) {
+                    maxDeflection = Math.abs(deflection);
                 }
-                
-                const macros = meal.options[selectedOptionIndex].macros;
-                
-                currentProgress.calories += macros.calories;
-                currentProgress.protein += macros.protein;
-                currentProgress.carbs += macros.carbs;
-                currentProgress.fat += macros.fat;
-                
-                meal.logged = true;
-                e.target.disabled = true;
-                e.target.textContent = 'Registrado ✓';
-                document.getElementById(`card-${mealId}`).classList.add('logged');
-
-                updateDashboard();
             }
 
-            function handleOptionSwitch(e) {
-                if (!e.target.classList.contains('option-btn')) return;
-
-                const mealId = e.target.dataset.mealId;
-                const optionIndex = parseInt(e.target.dataset.optionIndex, 10);
-                
-                document.querySelectorAll(`#card-${mealId} .option-btn`).forEach(btn => {
-                    btn.classList.remove('bg-emerald-600', 'text-white');
-                    btn.classList.add('bg-gray-200', 'text-gray-700');
-                });
-                
-                e.target.classList.add('bg-emerald-600', 'text-white');
-                e.target.classList.remove('bg-gray-200', 'text-gray-700');
-
-                document.querySelectorAll(`#card-${mealId} .option-content`).forEach(content => {
-                    content.classList.add('hidden');
-                });
-
-                document.getElementById(`option-content-${mealId}-${optionIndex}`).classList.remove('hidden');
-            }
+            // A heuristic scale factor for visualization. Adjust as needed.
+            // This ensures deflection is visible but not excessively large
+            const deflectionScale = (maxDeflection > 0) ? (canvas.height * 0.4) / maxDeflection : 0;
             
-            document.getElementById('meal-cards-container').addEventListener('click', (e) => {
-                if (e.target.classList.contains('log-meal-btn')) {
-                    handleLogMeal(e);
-                } else if (e.target.classList.contains('option-btn')) {
-                    handleOptionSwitch(e);
+            // Draw the curve
+            // The starting point for the curve needs to be calculated based on x=L for the formula (which is x=0 on the canvas left)
+            let initial_deflection_at_canvas_start = getDeflectionValue(currentL, currentL, currentP, currentE, currentI);
+            ctx.moveTo(beamStartX, beamBaseY - (initial_deflection_at_canvas_start * deflectionScale)); 
+
+            for (let i = 0; i <= 100; i++) {
+                const x_normalized_canvas = i / 100; // x from 0 (left) to 1 (right) on canvas
+                // Convert canvas X (left-to-right) to formula's X (fixed-to-free, fixed end is right)
+                const x_actual_from_fixed_end = (1 - x_normalized_canvas) * currentL;
+                const deflection = getDeflectionValue(x_actual_from_fixed_end, currentL, currentP, currentE, currentI);
+
+                const plotX = beamStartX + x_normalized_canvas * beamLengthPx;
+                // Deflection is likely negative (downwards), so subtract to move plotY down on the canvas.
+                const plotY = beamBaseY - (deflection * deflectionScale); 
+
+                if (i === 0) {
+                    // Already moved to start, but ensure if loop logic changes later.
+                    ctx.moveTo(plotX, plotY);
+                } else {
+                    ctx.lineTo(plotX, plotY);
                 }
-            });
+            }
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset line dash
 
-            document.getElementById('toggle-guidelines-btn').addEventListener('click', () => {
-                document.getElementById('guidelines-content').classList.toggle('hidden');
-            });
+            // Display current beam parameters on the canvas for clarity
+            ctx.fillStyle = '#475569';
+            ctx.font = '12px Inter';
+            ctx.fillText(`L: ${currentL.toFixed(2)} m`, 10, 20);
+            ctx.fillText(`P: ${currentP.toExponential(2)} N`, 10, 40);
+            ctx.fillText(`E: ${currentE.toExponential(2)} Pa`, 10, 60);
+            ctx.fillText(`I: ${currentI.toExponential(2)} m⁴`, 10, 80);
+        }
 
-            renderMealCards();
-            initializeDashboard();
+        // Mouse move event for interactive deflection display
+        canvas.addEventListener('mousemove', function(event) {
+            if (currentL === 0 || currentP === 0 || currentE === 0 || currentI === 0) {
+                deflectionDisplay.classList.add('hidden');
+                return;
+            }
+
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left; // X position relative to the canvas
+            
+            const beamLengthPx = canvas.width * 0.8;
+            const beamStartX = (canvas.width - beamLengthPx) / 2;
+
+            // Map mouseX (canvas coordinate from left) to its normalized position (0 to 1) on the beam
+            let x_normalized_canvas_mouse = (mouseX - beamStartX) / beamLengthPx;
+            
+            // Clamp normalized position to be within [0, 1]
+            x_normalized_canvas_mouse = Math.max(0, Math.min(1, x_normalized_canvas_mouse));
+
+            // Convert canvas X (left-to-right) to formula's X (fixed-to-free, fixed end is right)
+            const x_from_fixed_end_mapped = (1 - x_normalized_canvas_mouse) * currentL;
+
+            // Calculate deflection using 'x' from fixed end for the formula
+            const deflection = getDeflectionValue(x_from_fixed_end_mapped, currentL, currentP, currentE, currentI);
+
+            // Convert 'x' from fixed end to 'x' from free end for display (user's perspective)
+            const x_display_free_end = currentL - x_from_fixed_end_mapped;
+
+            deflectionDisplay.classList.remove('hidden');
+            deflectionDisplay.textContent = `Deformação em x = ${x_display_free_end.toFixed(2)} m (da extremidade livre): ${deflection.toExponential(4)} m`;
+
+            // Redraw with highlight dot
+            drawBeamAndDeflection();
+
+            // Determine max deflection for scaling the dot position
+            let maxDeflectionForDot = 0;
+            for (let i = 0; i <= 100; i++) {
+                const x_normalized = i / 100;
+                const x_actual_from_fixed_end = (1 - x_normalized) * currentL; // x for formula
+                const d = getDeflectionValue(x_actual_from_fixed_end, currentL, currentP, currentE, currentI);
+                if (Math.abs(d) > maxDeflectionForDot) {
+                    maxDeflectionForDot = Math.abs(d);
+                }
+            }
+            const deflectionScaleForDot = (maxDeflectionForDot > 0) ? (canvas.height * 0.4) / maxDeflectionForDot : 0;
+
+            ctx.beginPath();
+            // Plot the dot at the correct deflected position on the canvas
+            const dotPlotY = beamBaseY - (deflection * deflectionScaleForDot);
+            ctx.arc(mouseX, dotPlotY, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#f97316'; // Orange dot
+            ctx.fill();
         });
+
+        canvas.addEventListener('mouseout', function() {
+            deflectionDisplay.classList.add('hidden');
+            // Redraw to remove the highlight dot
+            drawBeamAndDeflection();
+        });
+
+        // Initial draw on load (optional, or triggered by first calculation)
+        window.onload = function() {
+            // Set initial canvas dimensions to ensure it's drawn correctly on first load
+            canvas.width = canvas.offsetWidth;
+            canvas.height = 300;
+            calculateDeflectionAndDraw(); // Calculate and draw with default values
+        };
     </script>
 </body>
 </html>
