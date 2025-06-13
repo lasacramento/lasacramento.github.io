@@ -13,6 +13,23 @@
                     fontFamily: {
                         inter: ['Inter', 'sans-serif'],
                     },
+                    colors: {
+                        // Custom colors inspired by the luxury pink theme
+                        'lux-pink-light': '#FCE7F0', // Very light pink for body background
+                        'lux-pink-medium': '#F9DEEC', // Slightly darker pink for container
+                        'lux-pink-dark': '#E9A6C2',  // Darker pink for accents
+                        'lux-gold': '#DAA520',       // Gold accent color
+                        'lux-text-dark': '#4A2A38',  // Darker text color for contrast
+                        'lux-text-light': '#FFFFFF', // Light text color
+                        'lux-button-gradient-start': '#FCB6D0',
+                        'lux-button-gradient-end': '#E9A6C2',
+                        'lux-error-bg': '#FDDCEE',
+                        'lux-error-border': '#FC89B6',
+                        'lux-error-text': '#A80053',
+                        'lux-result-bg': '#DFF2F8', // Slightly desaturated for results
+                        'lux-result-border': '#A5D6E1',
+                        'lux-result-text': '#006080',
+                    }
                 }
             }
         }
@@ -20,7 +37,7 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8;
+            background-color: #FCE7F0; /* Lux Pink Light */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -32,110 +49,120 @@
         .container {
             max-width: 800px;
             width: 100%;
-            background-color: #ffffff;
+            background-color: #F9DEEC; /* Lux Pink Medium */
             padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            border: 1px solid #e2e8f0;
+            border-radius: 16px; /* Slightly more rounded */
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15), 0 5px 15px rgba(0, 0, 0, 0.1); /* Deeper shadow */
+            border: 2px solid #DAA520; /* Lux Gold border */
             display: flex;
             flex-direction: column;
             gap: 20px;
         }
-        .input-group {
-            margin-bottom: 0px; /* Reduced margin for better spacing with new layout */
+        .description-box {
+            background-color: #F7D4E7; /* Slightly darker than container */
+            padding: 18px;
+            border-radius: 10px;
+            text-align: center;
+            color: #4A2A38; /* Lux Text Dark */
+            font-size: 0.98rem;
+            line-height: 1.6;
+            margin-bottom: 10px;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+            border: 1px solid #E9A6C2; /* Lux Pink Dark border */
+        }
+        .description-box b {
+            color: #DAA520; /* Gold for bold text */
         }
         .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #334155;
+            color: #4A2A38; /* Lux Text Dark */
         }
         .input-group input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            font-size: 1rem;
-            color: #1e293b;
-            transition: border-color 0.2s ease-in-out;
+            background-color: #FFF8FC; /* Very light, almost white */
+            border: 1px solid #E9A6C2; /* Lux Pink Dark */
+            color: #4A2A38; /* Lux Text Dark */
+            border-radius: 10px;
+            padding: 14px; /* Slightly larger padding */
         }
         .input-group input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            border-color: #DAA520; /* Lux Gold on focus */
+            box-shadow: 0 0 0 4px rgba(218, 165, 32, 0.3); /* Gold glow */
         }
         .btn-calculate {
-            width: 100%;
-            padding: 14px;
-            background-color: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.125rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
-            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+            padding: 16px; /* Larger button */
+            background: linear-gradient(135deg, #FCB6D0 0%, #E9A6C2 100%); /* Pink gradient */
+            color: #4A2A38; /* Lux Text Dark */
+            border: 2px solid #DAA520; /* Gold border */
+            border-radius: 10px;
+            font-size: 1.25rem; /* Larger font */
+            font-weight: 800; /* Bolder font */
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.4); /* Subtle text shadow */
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2), inset 0 2px 5px rgba(255, 255, 255, 0.3); /* Deeper shadow with inner light */
         }
         .btn-calculate:hover {
-            background-color: #2563eb;
-            transform: translateY(-2px);
+            background: linear-gradient(135deg, #E9A6C2 0%, #FCB6D0 100%); /* Reverse gradient on hover */
+            transform: translateY(-3px); /* More pronounced lift */
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3), inset 0 2px 5px rgba(255, 255, 255, 0.5);
         }
         .btn-calculate:active {
-            background-color: #1d4ed8;
+            background-color: #CB819E; /* Darker pink on active */
             transform: translateY(0);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
         .result-box {
-            margin-top: 10px; /* Adjusted margin */
-            padding: 20px;
-            background-color: #e0f2fe;
-            border-radius: 8px;
-            border: 1px solid #93c5fd;
-            color: #1e40af;
-            font-size: 1.1rem;
-            font-weight: 600;
-            text-align: center;
+            background-color: #DFF2F8; /* Lux Result Bg */
+            border: 1px solid #A5D6E1; /* Lux Result Border */
+            color: #006080; /* Lux Result Text */
+            border-radius: 10px;
         }
         .error-message {
-            margin-top: 10px; /* Adjusted margin */
-            padding: 15px;
-            background-color: #fee2e2;
-            border-radius: 8px;
-            border: 1px solid #ef4444;
-            color: #dc2626;
-            font-size: 1rem;
-            font-weight: 500;
-            text-align: center;
+            background-color: #FDDCEE; /* Lux Error Bg */
+            border: 1px solid #FC89B6; /* Lux Error Border */
+            color: #A80053; /* Lux Error Text */
+            border-radius: 10px;
         }
         canvas {
-            width: 100%;
-            height: auto;
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            margin-top: 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            background-color: #FFFBFD; /* Very light pink for canvas */
+            border: 1px solid #E9A6C2; /* Lux Pink Dark border */
+            border-radius: 10px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1); /* Subtle shadow for canvas */
         }
         #deflectionDisplay {
-            margin-top: 10px;
-            padding: 10px;
-            background-color: #ecfdf5;
-            border-radius: 8px;
-            border: 1px solid #34d399;
-            color: #065f46;
-            font-size: 1rem;
+            background-color: #D9F7E0; /* A soft green to contrast, or adjust to theme if preferred */
+            border: 1px solid #8BE4AD;
+            color: #21834F;
+            border-radius: 10px;
+        }
+        h1 {
+            color: #4A2A38; /* Lux Text Dark */
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5); /* Subtle shadow for title */
+        }
+        .app-footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px dashed #E9A6C2; /* Dashed pink line */
             text-align: center;
-            font-weight: 500;
-            min-height: 40px; /* Ensure space even when hidden */
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-size: 0.9rem;
+            color: #6B4E5D; /* Slightly darker pink for footer text */
+            line-height: 1.6;
+        }
+        .app-footer p {
+            margin: 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-4">Calculadora de Deformação de Viga Cantilever</h1>
+        <h1 class="text-3xl font-bold text-center mb-4">Calculadora de Deformação de Viga Cantilever</h1>
+
+        <div class="description-box">
+            <p>Esta calculadora determina a deformação em qualquer ponto de uma viga de concreto em balanço (cantilever) com base na equação da linha elástica (EDLE).</p>
+            <p>
+                <b>Parâmetros de Entrada:</b> Comprimento da viga (L), Base da seção (b), Altura da seção (h), Carga aplicada (P), Módulo de elasticidade do concreto (E), Ponto de estudo (x).
+            </p>
+            <p>
+                <b>Saída:</b> Deformação (v) no ponto 'x' especificado.
+            </p>
+        </div>
 
         <div class="input-grid grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="input-group">
@@ -179,6 +206,13 @@
 
         <canvas id="beamCanvas"></canvas>
         <div id="deflectionDisplay" class="hidden"></div>
+
+        <div class="app-footer">
+            <p>UNIVERSIDADE ESTADUAL DE SANTA CRUZ</p>
+            <p>DEPARTAMENTO DE ENGENHARIA E COMPUTAÇÃO</p>
+            <p>PROFESSOR LAIO SACRAMENTO</p>
+            <p>VERSÃO 0.0.1</p>
+        </div>
     </div>
 
     <script>
@@ -194,19 +228,19 @@
 
         /**
          * Calculates the deflection of a cantilever beam.
-         * The formula used expects 'x' to be measured from the fixed end.
-         * @param {number} x_from_fixed_end - The distance from the fixed end.
+         * The formula used expects 'x' to be measured from the free end.
+         * v = P/6EI * (-x^3 + 3L^2*x -2L^3)
+         * @param {number} x_from_free_end - The distance from the free end.
          * @param {number} L_val - The total length of the beam.
          * @param {number} P_val - The applied load at the free end.
          * @param {number} E_val - The modulus of elasticity.
          * @param {number} I_val - The moment of inertia.
          * @returns {number} The calculated deflection.
          */
-        function getDeflectionValue(x_from_fixed_end, L_val, P_val, E_val, I_val) {
+        function getDeflectionValue(x_from_free_end, L_val, P_val, E_val, I_val) {
             if (E_val === 0 || I_val === 0) return 0; // Avoid division by zero
-            // The updated formula: v = P/6EI * (-x^3 + 3L^2*x -2L^3)
-            // 'x' in this formula is assumed to be measured from the fixed end.
-            const deflection = (P_val / (6 * E_val * I_val)) * (-Math.pow(x_from_fixed_end, 3) + 3 * Math.pow(L_val, 2) * x_from_fixed_end - 2 * Math.pow(L_val, 3));
+            // The formula: v = P/6EI * (-x^3 + 3L^2*x -2L^3) with x from free end.
+            const deflection = (P_val / (6 * E_val * I_val)) * (-Math.pow(x_from_free_end, 3) + 3 * Math.pow(L_val, 2) * x_from_free_end - 2 * Math.pow(L_val, 3));
             return deflection;
         }
 
@@ -263,11 +297,8 @@
             currentE = E;
             currentI = I;
 
-            // Convert user's 'x' (from free end) to 'x' measured from the fixed end for the formula
-            const x_for_formula = L - x_input_free_end;
-
-            // Calculate deflection for the specific 'x' from input
-            const deflectionAtX = getDeflectionValue(x_for_formula, L, P, E, I);
+            // Calculate deflection for the specific 'x' from input (x is already from free end)
+            const deflectionAtX = getDeflectionValue(x_input_free_end, L, P, E, I);
 
             // Display the result for the specific 'x'
             deflectionValueSpan.textContent = deflectionAtX.toExponential(4); // Use scientific notation for clarity
@@ -290,36 +321,38 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
 
             const beamLengthPx = canvas.width * 0.8; // Use 80% of canvas width for beam
-            const beamStartX = (canvas.width - beamLengthPx) / 2; // Left side of the beam drawing
+            const beamStartX = (canvas.width - beamLengthPx) / 2; // Left side of the beam drawing (free end)
             const beamBaseY = canvas.height / 2; // Mid-height of canvas
+            const beamEndX = beamStartX + beamLengthPx; // Right side of the beam drawing (fixed end)
 
             // --- Draw Fixed Support (Engaste) on the RIGHT side ---
-            ctx.strokeStyle = '#334155';
-            ctx.fillStyle = '#64748b';
+            ctx.strokeStyle = '#4A2A38'; /* Darker outline for support */
+            ctx.fillStyle = '#E9A6C2';   /* Darker pink fill for support */
             const wallWidth = 20;
             const wallHeight = 80;
             // Position at the right end of the beam drawing
-            ctx.fillRect(beamStartX + beamLengthPx, beamBaseY - wallHeight / 2, wallWidth, wallHeight);
+            ctx.fillRect(beamEndX, beamBaseY - wallHeight / 2, wallWidth, wallHeight);
             // Hatching for fixed support
             ctx.beginPath();
+            ctx.strokeStyle = '#4A2A38'; /* Darker outline for hatching */
             for (let i = 0; i < wallHeight / 10; i++) {
-                ctx.moveTo(beamStartX + beamLengthPx, beamBaseY - wallHeight / 2 + i * 10);
-                ctx.lineTo(beamStartX + beamLengthPx + wallWidth, beamBaseY - wallHeight / 2 + i * 10 + 10);
+                ctx.moveTo(beamEndX, beamBaseY - wallHeight / 2 + i * 10);
+                ctx.lineTo(beamEndX + wallWidth, beamBaseY - wallHeight / 2 + i * 10 + 10);
             }
             ctx.stroke();
 
             // --- Draw Beam ---
             ctx.beginPath();
-            ctx.strokeStyle = '#1e293b';
+            ctx.strokeStyle = '#4A2A38'; /* Darker beam line */
             ctx.lineWidth = 4;
             ctx.moveTo(beamStartX, beamBaseY); // Start at left (free end)
-            ctx.lineTo(beamStartX + beamLengthPx, beamBaseY); // End at right (fixed end)
+            ctx.lineTo(beamEndX, beamBaseY); // End at right (fixed end)
             ctx.stroke();
 
             // --- Draw Load (P) at the free end (LEFT side) ---
             ctx.beginPath();
-            ctx.strokeStyle = '#ef4444';
-            ctx.fillStyle = '#ef4444';
+            ctx.strokeStyle = '#DAA520'; /* Gold for load */
+            ctx.fillStyle = '#DAA520'; /* Gold for load */
             ctx.lineWidth = 2;
             const arrowHeadSize = 10;
             // Line at the free end (left side of the beam)
@@ -334,64 +367,108 @@
             ctx.font = '14px Inter';
             ctx.fillText('P', beamStartX - 20, beamBaseY - 20); // Label 'P' to the left of the load
 
+            // --- Draw Reaction Forces (Ry, Rx) and Moment (M) at Fixed End (RIGHT side) ---
+            // Ry (Vertical Reaction) - Upwards reaction to P
+            ctx.beginPath();
+            ctx.strokeStyle = '#DAA520'; /* Gold for reactions */
+            ctx.fillStyle = '#DAA520'; /* Gold for reactions */
+            ctx.lineWidth = 2;
+            ctx.moveTo(beamEndX + 10, beamBaseY + 30);
+            ctx.lineTo(beamEndX + 10, beamBaseY);
+            ctx.lineTo(beamEndX + 10 - arrowHeadSize / 2, beamBaseY + arrowHeadSize);
+            ctx.moveTo(beamEndX + 10, beamBaseY);
+            ctx.lineTo(beamEndX + 10 + arrowHeadSize / 2, beamBaseY + arrowHeadSize);
+            ctx.stroke();
+            ctx.font = '14px Inter';
+            ctx.fillText('Ry', beamEndX + 15, beamBaseY + 35);
+
+            // Rx (Horizontal Reaction) - Drawing as per image, pointing left (assuming no horizontal load, but shown for diagram consistency)
+            ctx.beginPath();
+            ctx.strokeStyle = '#DAA520'; /* Gold for reactions */
+            ctx.fillStyle = '#DAA520'; /* Gold for reactions */
+            ctx.lineWidth = 2;
+            ctx.moveTo(beamEndX + 30, beamBaseY + 10);
+            ctx.lineTo(beamEndX, beamBaseY + 10);
+            ctx.lineTo(beamEndX + arrowHeadSize, beamBaseY + 10 - arrowHeadSize / 2);
+            ctx.moveTo(beamEndX, beamBaseY + 10);
+            ctx.lineTo(beamEndX + arrowHeadSize, beamBaseY + 10 + arrowHeadSize / 2);
+            ctx.stroke();
+            ctx.font = '14px Inter';
+            ctx.fillText('Rx', beamEndX + 35, beamBaseY + 15);
+
+            // M (Moment Reaction) - Counter-clockwise reaction to P causing clockwise rotation
+            ctx.beginPath();
+            ctx.strokeStyle = '#DAA520'; /* Gold for moment */
+            ctx.fillStyle = '#DAA520'; /* Gold for moment */
+            ctx.lineWidth = 2;
+            const arcRadius = 20;
+            // Arc for counter-clockwise moment
+            ctx.arc(beamEndX, beamBaseY - arcRadius, arcRadius, Math.PI * 0.5, Math.PI * 1.5, true); 
+            // Arrowhead for moment (pointing counter-clockwise)
+            const angleForArrow = Math.PI * 0.5 + 0.1; // A little past the start of the arc for arrow
+            const arrowX = beamEndX + arcRadius * Math.cos(angleForArrow);
+            const arrowY = beamBaseY - arcRadius + arcRadius * Math.sin(angleForArrow);
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX + arrowHeadSize * Math.cos(angleForArrow - Math.PI / 2 + 0.3), arrowY + arrowHeadSize * Math.sin(angleForArrow - Math.PI / 2 + 0.3));
+            ctx.moveTo(arrowX, arrowY);
+            ctx.lineTo(arrowX + arrowHeadSize * Math.cos(angleForArrow - Math.PI / 2 - 0.3), arrowY + arrowHeadSize * Math.sin(angleForArrow - Math.PI / 2 - 0.3));
+            ctx.stroke();
+            ctx.font = '14px Inter';
+            ctx.fillText('M', beamEndX + 25, beamBaseY - 25);
+
+
             // --- Draw L and X labels ---
-            ctx.fillStyle = '#475569';
+            ctx.fillStyle = '#4A2A38'; /* Darker text for labels */
             ctx.font = '12px Inter';
             ctx.fillText('L', beamStartX + beamLengthPx / 2, beamBaseY + 20); // Label for L
             ctx.fillText('x=0', beamStartX - 10, beamBaseY + 15); // x=0 at free end (left)
-            ctx.fillText('x=L', beamStartX + beamLengthPx - 10, beamBaseY + 15); // x=L at fixed end (right)
+            ctx.fillText('x=L', beamEndX - 10, beamBaseY + 15); // x=L at fixed end (right)
 
 
             // --- Plot Deflection Curve ---
             ctx.beginPath();
-            ctx.strokeStyle = '#3b82f6';
+            ctx.strokeStyle = '#DAA520'; /* Gold for deflection curve */
             ctx.lineWidth = 3;
             ctx.setLineDash([5, 5]); // Dashed line for deflection
 
             // Determine max deflection for scaling
-            let maxDeflection = 0;
+            let maxAbsDeflection = 0;
             // Iterate through a finer resolution for better curve plotting
             for (let i = 0; i <= 100; i++) {
                 const x_normalized_canvas = i / 100; // x from 0 (left) to 1 (right) on canvas
-                // Convert canvas X (left-to-right) to formula's X (fixed-to-free, fixed end is right)
-                const x_actual_from_fixed_end = (1 - x_normalized_canvas) * currentL;
-                const deflection = getDeflectionValue(x_actual_from_fixed_end, currentL, currentP, currentE, currentI);
-                if (Math.abs(deflection) > maxDeflection) {
-                    maxDeflection = Math.abs(deflection);
+                // 'x_actual_from_free_end' directly corresponds to x_normalized_canvas * currentL
+                const x_actual_from_free_end = x_normalized_canvas * currentL;
+                const deflection = getDeflectionValue(x_actual_from_free_end, currentL, currentP, currentE, currentI);
+                if (Math.abs(deflection) > maxAbsDeflection) {
+                    maxAbsDeflection = Math.abs(deflection);
                 }
             }
 
             // A heuristic scale factor for visualization. Adjust as needed.
-            // This ensures deflection is visible but not excessively large
-            const deflectionScale = (maxDeflection > 0) ? (canvas.height * 0.4) / maxDeflection : 0;
+            const deflectionScale = (maxAbsDeflection > 0) ? (canvas.height * 0.4) / maxAbsDeflection : 0;
             
             // Draw the curve
-            // The starting point for the curve needs to be calculated based on x=L for the formula (which is x=0 on the canvas left)
-            let initial_deflection_at_canvas_start = getDeflectionValue(currentL, currentL, currentP, currentE, currentI);
-            ctx.moveTo(beamStartX, beamBaseY - (initial_deflection_at_canvas_start * deflectionScale)); 
+            // Start at the free end (left side of canvas, x=0 for formula)
+            let initial_deflection_at_free_end = getDeflectionValue(0, currentL, currentP, currentE, currentI);
+            ctx.moveTo(beamStartX, beamBaseY - (initial_deflection_at_free_end * deflectionScale)); 
 
             for (let i = 0; i <= 100; i++) {
                 const x_normalized_canvas = i / 100; // x from 0 (left) to 1 (right) on canvas
-                // Convert canvas X (left-to-right) to formula's X (fixed-to-free, fixed end is right)
-                const x_actual_from_fixed_end = (1 - x_normalized_canvas) * currentL;
-                const deflection = getDeflectionValue(x_actual_from_fixed_end, currentL, currentP, currentE, currentI);
+                // 'x_actual_from_free_end' corresponds to x_normalized_canvas * currentL
+                const x_actual_from_free_end = x_normalized_canvas * currentL;
+                const deflection = getDeflectionValue(x_actual_from_free_end, currentL, currentP, currentE, currentI);
 
                 const plotX = beamStartX + x_normalized_canvas * beamLengthPx;
                 // Deflection is likely negative (downwards), so subtract to move plotY down on the canvas.
                 const plotY = beamBaseY - (deflection * deflectionScale); 
 
-                if (i === 0) {
-                    // Already moved to start, but ensure if loop logic changes later.
-                    ctx.moveTo(plotX, plotY);
-                } else {
-                    ctx.lineTo(plotX, plotY);
-                }
+                ctx.lineTo(plotX, plotY);
             }
             ctx.stroke();
             ctx.setLineDash([]); // Reset line dash
 
             // Display current beam parameters on the canvas for clarity
-            ctx.fillStyle = '#475569';
+            ctx.fillStyle = '#4A2A38'; /* Darker text for parameters */
             ctx.font = '12px Inter';
             ctx.fillText(`L: ${currentL.toFixed(2)} m`, 10, 20);
             ctx.fillText(`P: ${currentP.toExponential(2)} N`, 10, 40);
@@ -412,44 +489,38 @@
             const beamLengthPx = canvas.width * 0.8;
             const beamStartX = (canvas.width - beamLengthPx) / 2;
 
-            // Map mouseX (canvas coordinate from left) to its normalized position (0 to 1) on the beam
-            let x_normalized_canvas_mouse = (mouseX - beamStartX) / beamLengthPx;
+            // Map mouseX (canvas coordinate from left) to 'x' measured from the free end (0 to L)
+            let x_actual_from_free_end_mapped = (mouseX - beamStartX) / beamLengthPx * currentL;
             
-            // Clamp normalized position to be within [0, 1]
-            x_normalized_canvas_mouse = Math.max(0, Math.min(1, x_normalized_canvas_mouse));
+            // Clamp x_actual_from_free_end_mapped to be within [0, L]
+            x_actual_from_free_end_mapped = Math.max(0, Math.min(currentL, x_actual_from_free_end_mapped));
 
-            // Convert canvas X (left-to-right) to formula's X (fixed-to-free, fixed end is right)
-            const x_from_fixed_end_mapped = (1 - x_normalized_canvas_mouse) * currentL;
-
-            // Calculate deflection using 'x' from fixed end for the formula
-            const deflection = getDeflectionValue(x_from_fixed_end_mapped, currentL, currentP, currentE, currentI);
-
-            // Convert 'x' from fixed end to 'x' from free end for display (user's perspective)
-            const x_display_free_end = currentL - x_from_fixed_end_mapped;
+            // Calculate deflection using 'x' from free end for the formula
+            const deflection = getDeflectionValue(x_actual_from_free_end_mapped, currentL, currentP, currentE, currentI);
 
             deflectionDisplay.classList.remove('hidden');
-            deflectionDisplay.textContent = `Deformação em x = ${x_display_free_end.toFixed(2)} m (da extremidade livre): ${deflection.toExponential(4)} m`;
+            deflectionDisplay.textContent = `Deformação em x = ${x_actual_from_free_end_mapped.toFixed(2)} m (da extremidade livre): ${deflection.toExponential(4)} m`;
 
             // Redraw with highlight dot
             drawBeamAndDeflection();
 
             // Determine max deflection for scaling the dot position
-            let maxDeflectionForDot = 0;
+            let maxAbsDeflectionForDot = 0;
             for (let i = 0; i <= 100; i++) {
                 const x_normalized = i / 100;
-                const x_actual_from_fixed_end = (1 - x_normalized) * currentL; // x for formula
-                const d = getDeflectionValue(x_actual_from_fixed_end, currentL, currentP, currentE, currentI);
-                if (Math.abs(d) > maxDeflectionForDot) {
-                    maxDeflectionForDot = Math.abs(d);
+                const x_actual = x_normalized * currentL; // x from free end for formula
+                const d = getDeflectionValue(x_actual, currentL, currentP, currentE, currentI);
+                if (Math.abs(d) > maxAbsDeflectionForDot) {
+                    maxAbsDeflectionForDot = Math.abs(d);
                 }
             }
-            const deflectionScaleForDot = (maxDeflectionForDot > 0) ? (canvas.height * 0.4) / maxDeflectionForDot : 0;
+            const deflectionScaleForDot = (maxAbsDeflectionForDot > 0) ? (canvas.height * 0.4) / maxAbsDeflectionForDot : 0;
 
             ctx.beginPath();
             // Plot the dot at the correct deflected position on the canvas
             const dotPlotY = beamBaseY - (deflection * deflectionScaleForDot);
             ctx.arc(mouseX, dotPlotY, 5, 0, Math.PI * 2);
-            ctx.fillStyle = '#f97316'; // Orange dot
+            ctx.fillStyle = '#DAA520'; // Gold dot
             ctx.fill();
         });
 
