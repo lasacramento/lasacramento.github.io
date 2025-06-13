@@ -148,6 +148,41 @@
         .app-footer p {
             margin: 0;
         }
+        /* Styles for section type selection */
+        .section-type-selection {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .section-option {
+            text-align: center;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            transition: all 0.2s ease-in-out;
+        }
+        .section-option.selected {
+            border-color: #DAA520; /* Gold border when selected */
+            background-color: #FFF8FC; /* Lighter background when selected */
+            box-shadow: 0 4px 10px rgba(218, 165, 32, 0.2);
+        }
+        .section-option img {
+            width: 100px;
+            height: 70px;
+            object-fit: contain;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            border: 1px solid #E9A6C2;
+        }
+        .section-option label {
+            font-weight: 600;
+            color: #4A2A38;
+        }
+        .hidden-input {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -164,20 +199,25 @@
             </p>
         </div>
 
+        <!-- Section Type Selection -->
+        <div class="text-center text-xl font-bold text-lux-text-dark mb-4">Selecione o Tipo de Seção:</div>
+        <div class="section-type-selection">
+            <div class="section-option" id="optionRectangular">
+                <input type="radio" id="typeRectangular" name="sectionType" value="rectangular" checked onchange="toggleSectionInputs()">
+                <img src="https://placehold.co/180x120/E9A6C2/4A2A38?text=Retangular%0Abxh" alt="Seção Retangular">
+                <label for="typeRectangular">Retangular</label>
+            </div>
+            <div class="section-option" id="optionGeneric">
+                <input type="radio" id="typeGeneric" name="sectionType" value="generic" onchange="toggleSectionInputs()">
+                <img src="https://placehold.co/180x120/E9A6C2/4A2A38?text=Genérica" alt="Seção Genérica">
+                <label for="typeGeneric">Genérica</label>
+            </div>
+        </div>
+
         <div class="input-grid grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="input-group">
                 <label for="length">Comprimento da Viga (L) [metros]:</label>
                 <input type="number" id="length" placeholder="Ex: 5" step="any" value="5">
-            </div>
-
-            <div class="input-group">
-                <label for="base">Base da Seção (b) [metros]:</label>
-                <input type="number" id="base" placeholder="Ex: 0.3" step="any" value="0.3">
-            </div>
-
-            <div class="input-group">
-                <label for="height">Altura da Seção (h) [metros]:</label>
-                <input type="number" id="height" placeholder="Ex: 0.6" step="any" value="0.6">
             </div>
 
             <div class="input-group">
@@ -193,6 +233,26 @@
             <div class="input-group">
                 <label for="pointX">Ponto de Estudo (x) [metros, de 0 (extremidade livre) a L (engaste)]:</label>
                 <input type="number" id="pointX" placeholder="Ex: 0 (extremidade livre)" step="any" value="0">
+            </div>
+
+            <!-- Rectangular Section Inputs -->
+            <div id="rectangularInputs" class="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="input-group">
+                    <label for="base">Base da Seção (b) [metros]:</label>
+                    <input type="number" id="base" placeholder="Ex: 0.3" step="any" value="0.3">
+                </div>
+                <div class="input-group">
+                    <label for="height">Altura da Seção (h) [metros]:</label>
+                    <input type="number" id="height" placeholder="Ex: 0.6" step="any" value="0.6">
+                </div>
+            </div>
+
+            <!-- Generic Section Input -->
+            <div id="genericInertiaInput" class="col-span-1 md:col-span-2 hidden">
+                <div class="input-group">
+                    <label for="inertia">Momento de Inércia (I) [metros^4]:</label>
+                    <input type="number" id="inertia" placeholder="Ex: 0.0036" step="any" value="0.0036">
+                </div>
             </div>
         </div>
         
@@ -224,7 +284,7 @@
         let currentL = 0;
         let currentP = 0;
         let currentE = 0;
-        let currentI = 0;
+        let currentI = 0; // This will now be either calculated or input directly
 
         /**
          * Calculates the deflection of a cantilever beam.
@@ -244,14 +304,36 @@
             return deflection;
         }
 
+        // Function to toggle input fields based on section type selection
+        function toggleSectionInputs() {
+            const isRectangular = document.getElementById('typeRectangular').checked;
+            const rectangularInputs = document.getElementById('rectangularInputs');
+            const genericInertiaInput = document.getElementById('genericInertiaInput');
+
+            const optionRectangular = document.getElementById('optionRectangular');
+            const optionGeneric = document.getElementById('optionGeneric');
+
+            if (isRectangular) {
+                rectangularInputs.classList.remove('hidden');
+                genericInertiaInput.classList.add('hidden');
+                optionRectangular.classList.add('selected');
+                optionGeneric.classList.remove('selected');
+            } else {
+                rectangularInputs.classList.add('hidden');
+                genericInertiaInput.classList.remove('hidden');
+                optionRectangular.classList.remove('selected');
+                optionGeneric.classList.add('selected');
+            }
+            // Clear previous error messages if options are toggled
+            document.getElementById('errorMessage').classList.add('hidden');
+        }
+
+
         function calculateDeflectionAndDraw() {
-            // Get input values
+            // Get common input values
             const L = parseFloat(document.getElementById('length').value);
-            const b = parseFloat(document.getElementById('base').value);
-            const h = parseFloat(document.getElementById('height').value);
             const P = parseFloat(document.getElementById('load').value);
             const E = parseFloat(document.getElementById('elasticity').value);
-            // 'x_input_free_end' is the user's 'x' measured from the free end.
             const x_input_free_end = parseFloat(document.getElementById('pointX').value);
 
             // Get result and error elements
@@ -266,39 +348,68 @@
             deflectionDisplay.classList.add('hidden');
             deflectionDisplay.textContent = '';
 
+            // Determine section type and calculate I
+            const isRectangular = document.getElementById('typeRectangular').checked;
+            let I_calculated = 0; // Initialize I
 
-            // Input validation
-            if (isNaN(L) || isNaN(b) || isNaN(h) || isNaN(P) || isNaN(E) || isNaN(x_input_free_end)) {
-                errorMessage.textContent = 'Por favor, preencha todos os campos com valores numéricos válidos.';
+            if (isRectangular) {
+                const b = parseFloat(document.getElementById('base').value);
+                const h = parseFloat(document.getElementById('height').value);
+
+                // Input validation for rectangular section
+                if (isNaN(b) || isNaN(h)) {
+                    errorMessage.textContent = 'Para seção Retangular, por favor, preencha Base e Altura com valores numéricos válidos.';
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+                if (b <= 0 || h <= 0) {
+                    errorMessage.textContent = 'Base e Altura devem ser valores positivos para seção Retangular.';
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+                I_calculated = (b * Math.pow(h, 3)) / 12;
+            } else { // Generic section
+                I_calculated = parseFloat(document.getElementById('inertia').value);
+                // Input validation for generic section
+                if (isNaN(I_calculated)) {
+                    errorMessage.textContent = 'Para seção Genérica, por favor, preencha Momento de Inércia com um valor numérico válido.';
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+                if (I_calculated <= 0) {
+                    errorMessage.textContent = 'Momento de Inércia deve ser um valor positivo para seção Genérica.';
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+            }
+
+            // Common input validation
+            if (isNaN(L) || isNaN(P) || isNaN(E) || isNaN(x_input_free_end)) {
+                errorMessage.textContent = 'Por favor, preencha todos os campos obrigatórios com valores numéricos válidos.';
                 errorMessage.classList.remove('hidden');
                 return;
             }
 
-            if (L <= 0 || b <= 0 || h <= 0 || E <= 0) {
-                errorMessage.textContent = 'Comprimento, base, altura e elasticidade devem ser valores positivos.';
+            if (L <= 0 || E <= 0) {
+                errorMessage.textContent = 'Comprimento e Elasticidade devem ser valores positivos.';
                 errorMessage.classList.remove('hidden');
                 return;
             }
 
-            // Validate x_input_free_end (from 0 at free end to L at fixed end)
             if (x_input_free_end < 0 || x_input_free_end > L) {
                 errorMessage.textContent = 'O ponto de estudo (x) deve estar entre 0 (extremidade livre) e L (engaste).';
                 errorMessage.classList.remove('hidden');
                 return;
             }
             
-            // Calculate moment of inertia (I) for a rectangular section
-            // I = (b * h^3) / 12
-            const I = (b * Math.pow(h, 3)) / 12;
-
             // Store current parameters for drawing
             currentL = L;
             currentP = P;
             currentE = E;
-            currentI = I;
+            currentI = I_calculated; // Use the determined I
 
             // Calculate deflection for the specific 'x' from input (x is already from free end)
-            const deflectionAtX = getDeflectionValue(x_input_free_end, L, P, E, I);
+            const deflectionAtX = getDeflectionValue(x_input_free_end, L, P, E, I_calculated);
 
             // Display the result for the specific 'x'
             deflectionValueSpan.textContent = deflectionAtX.toExponential(4); // Use scientific notation for clarity
@@ -530,11 +641,12 @@
             drawBeamAndDeflection();
         });
 
-        // Initial draw on load (optional, or triggered by first calculation)
+        // Initial call to set up the section input display and initial calculation
         window.onload = function() {
             // Set initial canvas dimensions to ensure it's drawn correctly on first load
             canvas.width = canvas.offsetWidth;
             canvas.height = 300;
+            toggleSectionInputs(); // Set up initial visibility
             calculateDeflectionAndDraw(); // Calculate and draw with default values
         };
     </script>
