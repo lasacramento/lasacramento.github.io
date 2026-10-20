@@ -1,654 +1,752 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora de Deformação de Viga</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        inter: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        // Custom colors inspired by the luxury pink theme
-                        'lux-pink-light': '#FCE7F0', // Very light pink for body background
-                        'lux-pink-medium': '#F9DEEC', // Slightly darker pink for container
-                        'lux-pink-dark': '#E9A6C2',  // Darker pink for accents
-                        'lux-gold': '#DAA520',       // Gold accent color
-                        'lux-text-dark': '#4A2A38',  // Darker text color for contrast
-                        'lux-text-light': '#FFFFFF', // Light text color
-                        'lux-button-gradient-start': '#FCB6D0',
-                        'lux-button-gradient-end': '#E9A6C2',
-                        'lux-error-bg': '#FDDCEE',
-                        'lux-error-border': '#FC89B6',
-                        'lux-error-text': '#A80053',
-                        'lux-result-bg': '#DFF2F8', // Slightly desaturated for results
-                        'lux-result-border': '#A5D6E1',
-                        'lux-result-text': '#006080',
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #FCE7F0; /* Lux Pink Light */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .container {
-            max-width: 800px;
-            width: 100%;
-            background-color: #F9DEEC; /* Lux Pink Medium */
-            padding: 30px;
-            border-radius: 16px; /* Slightly more rounded */
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15), 0 5px 15px rgba(0, 0, 0, 0.1); /* Deeper shadow */
-            border: 2px solid #DAA520; /* Lux Gold border */
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        .description-box {
-            background-color: #F7D4E7; /* Slightly darker than container */
-            padding: 18px;
-            border-radius: 10px;
-            text-align: center;
-            color: #4A2A38; /* Lux Text Dark */
-            font-size: 0.98rem;
-            line-height: 1.6;
-            margin-bottom: 10px;
-            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
-            border: 1px solid #E9A6C2; /* Lux Pink Dark border */
-        }
-        .description-box b {
-            color: #DAA520; /* Gold for bold text */
-        }
-        .input-group label {
-            color: #4A2A38; /* Lux Text Dark */
-        }
-        .input-group input {
-            background-color: #FFF8FC; /* Very light, almost white */
-            border: 1px solid #E9A6C2; /* Lux Pink Dark */
-            color: #4A2A38; /* Lux Text Dark */
-            border-radius: 10px;
-            padding: 14px; /* Slightly larger padding */
-        }
-        .input-group input:focus {
-            border-color: #DAA520; /* Lux Gold on focus */
-            box-shadow: 0 0 0 4px rgba(218, 165, 32, 0.3); /* Gold glow */
-        }
-        .btn-calculate {
-            padding: 16px; /* Larger button */
-            background: linear-gradient(135deg, #FCB6D0 0%, #E9A6C2 100%); /* Pink gradient */
-            color: #4A2A38; /* Lux Text Dark */
-            border: 2px solid #DAA520; /* Gold border */
-            border-radius: 10px;
-            font-size: 1.25rem; /* Larger font */
-            font-weight: 800; /* Bolder font */
-            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.4); /* Subtle text shadow */
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2), inset 0 2px 5px rgba(255, 255, 255, 0.3); /* Deeper shadow with inner light */
-        }
-        .btn-calculate:hover {
-            background: linear-gradient(135deg, #E9A6C2 0%, #FCB6D0 100%); /* Reverse gradient on hover */
-            transform: translateY(-3px); /* More pronounced lift */
-            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3), inset 0 2px 5px rgba(255, 255, 255, 0.5);
-        }
-        .btn-calculate:active {
-            background-color: #CB819E; /* Darker pink on active */
-            transform: translateY(0);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        }
-        .result-box {
-            background-color: #DFF2F8; /* Lux Result Bg */
-            border: 1px solid #A5D6E1; /* Lux Result Border */
-            color: #006080; /* Lux Result Text */
-            border-radius: 10px;
-        }
-        .error-message {
-            background-color: #FDDCEE; /* Lux Error Bg */
-            border: 1px solid #FC89B6; /* Lux Error Border */
-            color: #A80053; /* Lux Error Text */
-            border-radius: 10px;
-        }
-        canvas {
-            background-color: #FFFBFD; /* Very light pink for canvas */
-            border: 1px solid #E9A6C2; /* Lux Pink Dark border */
-            border-radius: 10px;
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1); /* Subtle shadow for canvas */
-        }
-        #deflectionDisplay {
-            background-color: #D9F7E0; /* A soft green to contrast, or adjust to theme if preferred */
-            border: 1px solid #8BE4AD;
-            color: #21834F;
-            border-radius: 10px;
-        }
-        h1 {
-            color: #4A2A38; /* Lux Text Dark */
-            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5); /* Subtle shadow for title */
-        }
-        .app-footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px dashed #E9A6C2; /* Dashed pink line */
-            text-align: center;
-            font-size: 0.9rem;
-            color: #6B4E5D; /* Slightly darker pink for footer text */
-            line-height: 1.6;
-        }
-        .app-footer p {
-            margin: 0;
-        }
-        /* Styles for section type selection */
-        .section-type-selection {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        .section-option {
-            text-align: center;
-            cursor: pointer;
-            padding: 10px;
-            border-radius: 10px;
-            border: 2px solid transparent;
-            transition: all 0.2s ease-in-out;
-        }
-        .section-option.selected {
-            border-color: #DAA520; /* Gold border when selected */
-            background-color: #FFF8FC; /* Lighter background when selected */
-            box-shadow: 0 4px 10px rgba(218, 165, 32, 0.2);
-        }
-        .section-option img {
-            width: 100px;
-            height: 70px;
-            object-fit: contain;
-            margin-bottom: 8px;
-            border-radius: 5px;
-            border: 1px solid #E9A6C2;
-        }
-        .section-option label {
-            font-weight: 600;
-            color: #4A2A38;
-        }
-        .hidden-input {
-            display: none;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculadora de Vigas V02</title>
+<style>
+:root{
+  --bg:#f5f6f8; --card:#ffffff; --ink:#1c232b; --muted:#5b6672; --line:#dce1e7; --soft:#eef1f4;
+  --accent:#2f5d8a; --accent-soft:#e7eff7;
+  --ok:#1d7548; --ok-soft:#e5f3eb; --bad:#b0281f; --bad-soft:#fbeaea; --warn:#8a5900; --warn-soft:#fff3d9;
+  --cV:#6b4fa8; --cM:#b85a24; --cD:#2f5d8a; --load:#37424e;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--card);border-bottom:1px solid var(--line);padding:14px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+header h1{font-size:19px;margin:0}
+header .ver{color:var(--muted);font-size:13px}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:7px 12px;font:inherit;font-size:14px;cursor:pointer}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{padding:3px 8px;font-size:13px}
+.layout{display:grid;grid-template-columns:370px minmax(0,1fr);gap:16px;padding:16px;max-width:1400px;margin:0 auto}
+.layout>*{min-width:0}
+@media (max-width:960px){.layout{grid-template-columns:1fr;padding:12px}}
+@media (max-width:480px){.row3{grid-template-columns:1fr 1fr}header{padding:12px 16px}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.card h2{font-size:15px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.card h3{font-size:15px;margin:14px 0 6px}
+label{display:block;font-size:13px;color:var(--muted);margin:8px 0 3px}
+input[type=text],select{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:7px;font:inherit;background:#fff;color:var(--ink)}
+input[type=text]:focus,select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.hint{font-size:12.5px;color:var(--muted);margin-top:4px}
+.tag{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:2px 9px;font-size:12.5px;font-weight:600}
+.load{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:8px;background:#fbfcfd}
+.load .top{display:flex;gap:8px;align-items:center}
+.load .top select{flex:1}
+.check{display:flex;gap:8px;align-items:flex-start;margin:8px 0;font-size:14px;color:var(--ink)}
+.check input{margin-top:3px}
+.alert{border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:14px}
+.alert.ok{background:var(--ok-soft);color:var(--ok)}
+.alert.bad{background:var(--bad-soft);color:var(--bad)}
+.alert.warn{background:var(--warn-soft);color:var(--warn)}
+.alert b{display:block;margin-bottom:2px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.kpi{border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+.kpi .k{font-size:12.5px;color:var(--muted)}
+.kpi .v{font-size:20px;font-weight:650;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:12.5px;color:var(--muted)}
+svg{width:100%;height:auto;display:block}
+svg text{font:12px system-ui,sans-serif;fill:var(--ink)}
+svg .muted{fill:var(--muted)}
+.beam{stroke:#3d4752;stroke-width:6;stroke-linecap:round}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{border-bottom:1px solid var(--line);padding:6px 6px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:12.5px}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.st-ok{color:var(--ok);font-weight:650}
+.st-bad{color:var(--bad);font-weight:650}
+.memo ol{padding-left:20px;margin:0}
+.memo li{margin-bottom:8px}
+.memo .eq{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;background:var(--soft);padding:2px 6px;border-radius:5px;display:inline-block;margin-top:2px}
+details summary{cursor:pointer;font-weight:600}
+#verif{display:none}
+#verif.open{display:block}
+.summary-pill{font-weight:650;padding:3px 10px;border-radius:999px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:5px}
+.scroll{overflow-x:auto}
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="text-3xl font-bold text-center mb-4">Calculadora de Deformação de Viga Cantilever</h1>
+<header>
+  <div>
+    <h1>Calculadora de Vigas — deflexão, esforços e tensões</h1>
+    <div class="ver">Versão V02 · 20/10/2026 · regime elástico linear (Euler-Bernoulli)</div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <select id="preset" class="btn" style="width:auto">
+      <option value="">Carregar exemplo…</option>
+      <option value="tutorial">Exemplo do tutorial (P central, L = 2 m)</option>
+      <option value="tri">Biapoiada · carga triangular</option>
+      <option value="cant">Balanço · carga na ponta</option>
+      <option value="propped">Apoiada-engastada · carga uniforme</option>
+      <option value="fixed">Biengastada · carga central</option>
+      <option value="combo">Combinação de cargas + peso próprio</option>
+    </select>
+    <button class="btn primary" id="btnVerif">Modo verificação</button>
+  </div>
+</header>
 
-        <div class="description-box">
-            <p>Esta calculadora determina a deformação em qualquer ponto de uma viga de concreto em balanço (cantilever) com base na equação da linha elástica (EDLE).</p>
-            <p>
-                <b>Parâmetros de Entrada:</b> Comprimento da viga (L), Base da seção (b), Altura da seção (h), Carga aplicada (P), Módulo de elasticidade do concreto (E), Ponto de estudo (x).
-            </p>
-            <p>
-                <b>Saída:</b> Deformação (v) no ponto 'x' especificado.
-            </p>
-        </div>
-
-        <!-- Section Type Selection -->
-        <div class="text-center text-xl font-bold text-lux-text-dark mb-4">Selecione o Tipo de Seção:</div>
-        <div class="section-type-selection">
-            <div class="section-option" id="optionRectangular">
-                <input type="radio" id="typeRectangular" name="sectionType" value="rectangular" checked onchange="toggleSectionInputs()">
-                <img src="https://placehold.co/180x120/E9A6C2/4A2A38?text=Retangular%0Abxh" alt="Seção Retangular">
-                <label for="typeRectangular">Retangular</label>
-            </div>
-            <div class="section-option" id="optionGeneric">
-                <input type="radio" id="typeGeneric" name="sectionType" value="generic" onchange="toggleSectionInputs()">
-                <img src="https://placehold.co/180x120/E9A6C2/4A2A38?text=Genérica" alt="Seção Genérica">
-                <label for="typeGeneric">Genérica</label>
-            </div>
-        </div>
-
-        <div class="input-grid grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="input-group">
-                <label for="length">Comprimento da Viga (L) [metros]:</label>
-                <input type="number" id="length" placeholder="Ex: 5" step="any" value="5">
-            </div>
-
-            <div class="input-group">
-                <label for="load">Carga Aplicada (P) [Newtons]:</label>
-                <input type="number" id="load" placeholder="Ex: 10000" step="any" value="10000">
-            </div>
-
-            <div class="input-group">
-                <label for="elasticity">Módulo de Elasticidade (E) [Pascals]:</label>
-                <input type="number" id="elasticity" placeholder="Ex: 30e9" step="any" value="30e9">
-            </div>
-
-            <div class="input-group">
-                <label for="pointX">Ponto de Estudo (x) [metros, de 0 (extremidade livre) a L (engaste)]:</label>
-                <input type="number" id="pointX" placeholder="Ex: 0 (extremidade livre)" step="any" value="0">
-            </div>
-
-            <!-- Rectangular Section Inputs -->
-            <div id="rectangularInputs" class="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="input-group">
-                    <label for="base">Base da Seção (b) [metros]:</label>
-                    <input type="number" id="base" placeholder="Ex: 0.3" step="any" value="0.3">
-                </div>
-                <div class="input-group">
-                    <label for="height">Altura da Seção (h) [metros]:</label>
-                    <input type="number" id="height" placeholder="Ex: 0.6" step="any" value="0.6">
-                </div>
-            </div>
-
-            <!-- Generic Section Input -->
-            <div id="genericInertiaInput" class="col-span-1 md:col-span-2 hidden">
-                <div class="input-group">
-                    <label for="inertia">Momento de Inércia (I) [metros^4]:</label>
-                    <input type="number" id="inertia" placeholder="Ex: 0.0036" step="any" value="0.0036">
-                </div>
-            </div>
-        </div>
-        
-        <button class="btn-calculate" onclick="calculateDeflectionAndDraw()">Calcular e Desenhar</button>
-
-        <div id="result" class="result-box hidden">
-            <p>A deformação no ponto x (da extremidade livre) é: <span id="deflectionValue"></span> metros.</p>
-        </div>
-
-        <div id="errorMessage" class="error-message hidden"></div>
-
-        <canvas id="beamCanvas"></canvas>
-        <div id="deflectionDisplay" class="hidden"></div>
-
-        <div class="app-footer">
-            <p>UNIVERSIDADE ESTADUAL DE SANTA CRUZ</p>
-            <p>DEPARTAMENTO DE ENGENHARIA E COMPUTAÇÃO</p>
-            <p>PROFESSOR LAIO SACRAMENTO</p>
-            <p>VERSÃO 0.0.1</p>
-        </div>
+<div class="layout">
+<!-- ================= ENTRADAS ================= -->
+<aside>
+  <div class="card">
+    <h2>1 · Vão e apoios</h2>
+    <label for="L">Comprimento L [m]</label>
+    <input type="text" id="L" inputmode="decimal" value="2">
+    <div class="row2">
+      <div><label for="left">Extremidade esquerda</label>
+        <select id="left"><option value="apoio">Apoio (pino)</option><option value="engaste">Engaste</option><option value="livre">Livre</option></select></div>
+      <div><label for="right">Extremidade direita</label>
+        <select id="right"><option value="apoio">Apoio (rolete)</option><option value="engaste">Engaste</option><option value="livre">Livre</option></select></div>
     </div>
+    <div class="hint" id="structInfo"></div>
+  </div>
 
-    <script>
-        const canvas = document.getElementById('beamCanvas');
-        const ctx = canvas.getContext('2d');
-        const deflectionDisplay = document.getElementById('deflectionDisplay');
+  <div class="card">
+    <h2>2 · Material</h2>
+    <select id="material">
+      <option value="aco">Aço</option><option value="aluminio">Alumínio</option>
+      <option value="madeira">Madeira</option><option value="concreto">Concreto (sem armadura)</option>
+      <option value="custom">Personalizado</option>
+    </select>
+    <div class="row3">
+      <div><label for="E">E [GPa]</label><input type="text" id="E" inputmode="decimal"></div>
+      <div><label for="f" id="fLabel">f [MPa]</label><input type="text" id="f" inputmode="decimal"></div>
+      <div><label for="gamma">γ [kN/m³]</label><input type="text" id="gamma" inputmode="decimal"></div>
+    </div>
+    <div class="hint" id="matHint"></div>
+  </div>
 
-        // Global variables to store current beam properties for drawing
-        let currentL = 0;
-        let currentP = 0;
-        let currentE = 0;
-        let currentI = 0; // This will now be either calculated or input directly
+  <div class="card">
+    <h2>3 · Seção transversal</h2>
+    <select id="secType">
+      <option value="rect">Retangular</option><option value="circ">Circular maciça</option>
+      <option value="tri">Triangular (vértice para cima)</option><option value="custom">Personalizada (informar I)</option>
+    </select>
+    <div id="sec_rect" class="row2"><div><label>Base b [cm]</label><input type="text" id="rect_b" value="10"></div><div><label>Altura h [cm]</label><input type="text" id="rect_h" value="20"></div></div>
+    <div id="sec_circ"><label>Diâmetro D [cm]</label><input type="text" id="circ_D" value="20"></div>
+    <div id="sec_tri" class="row2"><div><label>Base b [cm]</label><input type="text" id="tri_b" value="15"></div><div><label>Altura h [cm]</label><input type="text" id="tri_h" value="20"></div></div>
+    <div id="sec_custom" class="row3"><div><label>I [cm⁴]</label><input type="text" id="cus_I" value="6667"></div><div><label>c<sub>máx</sub> [cm]</label><input type="text" id="cus_c" value="10"></div><div><label>A [cm²]</label><input type="text" id="cus_A" value="200"></div></div>
+    <div class="hint" id="secInfo"></div>
+  </div>
 
-        /**
-         * Calculates the deflection of a cantilever beam.
-         * The formula used expects 'x' to be measured from the free end.
-         * v = P/6EI * (-x^3 + 3L^2*x -2L^3)
-         * @param {number} x_from_free_end - The distance from the free end.
-         * @param {number} L_val - The total length of the beam.
-         * @param {number} P_val - The applied load at the free end.
-         * @param {number} E_val - The modulus of elasticity.
-         * @param {number} I_val - The moment of inertia.
-         * @returns {number} The calculated deflection.
-         */
-        function getDeflectionValue(x_from_free_end, L_val, P_val, E_val, I_val) {
-            if (E_val === 0 || I_val === 0) return 0; // Avoid division by zero
-            // The formula: v = P/6EI * (-x^3 + 3L^2*x -2L^3) with x from free end.
-            const deflection = (P_val / (6 * E_val * I_val)) * (-Math.pow(x_from_free_end, 3) + 3 * Math.pow(L_val, 2) * x_from_free_end - 2 * Math.pow(L_val, 3));
-            return deflection;
-        }
+  <div class="card">
+    <h2>4 · Cargas</h2>
+    <div class="hint" style="margin:0 0 8px">Valores positivos = para baixo; momento positivo = sentido horário. Posições medidas a partir da extremidade esquerda.</div>
+    <div id="loads"></div>
+    <button class="btn small" id="addLoad">+ Adicionar carga</button>
+    <label class="check"><input type="checkbox" id="selfWeight"> <span>Incluir peso próprio (γ·A)</span></label>
+  </div>
 
-        // Function to toggle input fields based on section type selection
-        function toggleSectionInputs() {
-            const isRectangular = document.getElementById('typeRectangular').checked;
-            const rectangularInputs = document.getElementById('rectangularInputs');
-            const genericInertiaInput = document.getElementById('genericInertiaInput');
+  <div class="card">
+    <h2>5 · Limite de flecha</h2>
+    <label for="nLim">Flecha limite = ℓ / n, com n =</label>
+    <input type="text" id="nLim" value="250">
+    <div class="hint">ℓ = L em vãos; ℓ = 2L em balanços. Confira o valor de n na norma do material (NBR 6118, 7190, 8800…).</div>
+  </div>
+</aside>
 
-            const optionRectangular = document.getElementById('optionRectangular');
-            const optionGeneric = document.getElementById('optionGeneric');
+<!-- ================= RESULTADOS ================= -->
+<main>
+  <section id="verif" class="card">
+    <h2>Modo verificação</h2>
+    <p style="margin:0 0 10px">O app compara a integração numérica com fórmulas tabeladas e com testes de sanidade. Tolerância: 0,5%. Clique em <b>Abrir</b> para carregar um caso na calculadora.</p>
+    <div id="verifSummary" style="margin-bottom:10px"></div>
+    <h3>Nível 1 · Testes de sanidade (proporcionalidade, simetria, equilíbrio)</h3>
+    <div class="scroll"><table id="tblSanity"></table></div>
+    <h3>Nível 2 · Casos de referência (fórmulas tabeladas)</h3>
+    <div class="hint" style="margin-bottom:6px">Parâmetros: L = 4 m, aço (E = 200 GPa), seção 10 × 20 cm, P = 10 kN, q = 10 kN/m, M₀ = 10 kN·m. Fontes: tabelas de deflexão de vigas de Hibbeler, <i>Resistência dos Materiais</i>, e Gere &amp; Goodno, <i>Mecânica dos Materiais</i>.</div>
+    <div class="scroll"><table id="tblBench"></table></div>
+    <div class="hint" style="margin-top:10px">Níveis 3 (comparação com cálculo manual ou Ftool) e 4 (ensaio físico) ficam com o usuário — use a ficha de verificação abaixo dos resultados.</div>
+  </section>
 
-            if (isRectangular) {
-                rectangularInputs.classList.remove('hidden');
-                genericInertiaInput.classList.add('hidden');
-                optionRectangular.classList.add('selected');
-                optionGeneric.classList.remove('selected');
-            } else {
-                rectangularInputs.classList.add('hidden');
-                genericInertiaInput.classList.remove('hidden');
-                optionRectangular.classList.remove('selected');
-                optionGeneric.classList.add('selected');
-            }
-            // Clear previous error messages if options are toggled
-            document.getElementById('errorMessage').classList.add('hidden');
-        }
+  <div id="status"></div>
 
+  <div class="card">
+    <h2>Esquema e deformada</h2>
+    <div id="beamSvg"></div>
+    <div class="legend"><span><i style="background:var(--cD)"></i>deformada (escala exagerada)</span><span><i style="background:#3d4752"></i>viga indeformada</span></div>
+  </div>
 
-        function calculateDeflectionAndDraw() {
-            // Get common input values
-            const L = parseFloat(document.getElementById('length').value);
-            const P = parseFloat(document.getElementById('load').value);
-            const E = parseFloat(document.getElementById('elasticity').value);
-            const x_input_free_end = parseFloat(document.getElementById('pointX').value);
+  <div class="card">
+    <h2>Resultados</h2>
+    <div class="kpis" id="kpis"></div>
+  </div>
 
-            // Get result and error elements
-            const resultBox = document.getElementById('result');
-            const errorMessage = document.getElementById('errorMessage');
-            const deflectionValueSpan = document.getElementById('deflectionValue');
+  <div class="card">
+    <h2>Diagramas</h2>
+    <h3 style="color:var(--cV)">Esforço cortante V(x) [kN]</h3><div id="plotV"></div>
+    <h3 style="color:var(--cM)">Momento fletor M(x) [kN·m] <span class="hint">— positivo desenhado abaixo do eixo (lado tracionado)</span></h3><div id="plotM"></div>
+    <h3 style="color:var(--cD)">Linha elástica v(x) [mm]</h3><div id="plotD"></div>
+  </div>
 
-            // Hide previous results/errors and display
-            resultBox.classList.add('hidden');
-            errorMessage.classList.add('hidden');
-            errorMessage.textContent = '';
-            deflectionDisplay.classList.add('hidden');
-            deflectionDisplay.textContent = '';
+  <div class="card memo">
+    <h2>Memória de cálculo</h2>
+    <div id="memo"></div>
+  </div>
 
-            // Determine section type and calculate I
-            const isRectangular = document.getElementById('typeRectangular').checked;
-            let I_calculated = 0; // Initialize I
+  <div class="card">
+    <h2>Comparação com fórmula tabelada</h2>
+    <div id="tab"></div>
+  </div>
 
-            if (isRectangular) {
-                const b = parseFloat(document.getElementById('base').value);
-                const h = parseFloat(document.getElementById('height').value);
+  <div class="card">
+    <h2>Ficha de verificação do usuário</h2>
+    <p style="margin:0 0 8px">Resolva o mesmo caso à mão (ou no Ftool) e informe seus valores. O app calcula o erro relativo.</p>
+    <div class="row3">
+      <div><label>Sua flecha máx. [mm]</label><input type="text" id="man_d"></div>
+      <div><label>Seu |M|máx [kN·m]</label><input type="text" id="man_M"></div>
+      <div><label>Sua σmáx [MPa]</label><input type="text" id="man_s"></div>
+    </div>
+    <div id="manOut" style="margin-top:10px"></div>
+    <button class="btn" id="btnCsv" style="margin-top:10px">Exportar ficha (CSV)</button>
+  </div>
 
-                // Input validation for rectangular section
-                if (isNaN(b) || isNaN(h)) {
-                    errorMessage.textContent = 'Para seção Retangular, por favor, preencha Base e Altura com valores numéricos válidos.';
-                    errorMessage.classList.remove('hidden');
-                    return;
-                }
-                if (b <= 0 || h <= 0) {
-                    errorMessage.textContent = 'Base e Altura devem ser valores positivos para seção Retangular.';
-                    errorMessage.classList.remove('hidden');
-                    return;
-                }
-                I_calculated = (b * Math.pow(h, 3)) / 12;
-            } else { // Generic section
-                I_calculated = parseFloat(document.getElementById('inertia').value);
-                // Input validation for generic section
-                if (isNaN(I_calculated)) {
-                    errorMessage.textContent = 'Para seção Genérica, por favor, preencha Momento de Inércia com um valor numérico válido.';
-                    errorMessage.classList.remove('hidden');
-                    return;
-                }
-                if (I_calculated <= 0) {
-                    errorMessage.textContent = 'Momento de Inércia deve ser um valor positivo para seção Genérica.';
-                    errorMessage.classList.remove('hidden');
-                    return;
-                }
-            }
+  <div class="card">
+    <h2>Antes de confiar no resultado</h2>
+    <label class="check"><input type="checkbox"> <span>As unidades estão certas? (L em m, seção em cm, cargas em kN, kN/m, kN·m)</span></label>
+    <label class="check"><input type="checkbox"> <span>A deformada tem a forma esperada? (máximo no lugar certo, inclinação nula no engaste)</span></label>
+    <label class="check"><input type="checkbox"> <span>Dobrei a carga e a flecha dobrou? Espelhei a carga e o resultado não mudou?</span></label>
+    <label class="check"><input type="checkbox"> <span>A soma das reações é igual à carga total? (ver memória de cálculo)</span></label>
+    <label class="check"><input type="checkbox"> <span>Conferi pelo menos um valor à mão ou no Ftool e registrei na ficha?</span></label>
+    <label class="check"><input type="checkbox"> <span>As hipóteses do modelo valem para o meu caso? (ver abaixo)</span></label>
+  </div>
 
-            // Common input validation
-            if (isNaN(L) || isNaN(P) || isNaN(E) || isNaN(x_input_free_end)) {
-                errorMessage.textContent = 'Por favor, preencha todos os campos obrigatórios com valores numéricos válidos.';
-                errorMessage.classList.remove('hidden');
-                return;
-            }
+  <div class="card">
+    <details>
+      <summary>Hipóteses e limitações do modelo</summary>
+      <ul>
+        <li>Teoria de Euler-Bernoulli: seções planas permanecem planas; deformação por cisalhamento desprezada (adequado para L/h &gt; ~10).</li>
+        <li>Material homogêneo, isotrópico e elástico linear; pequenos deslocamentos.</li>
+        <li>Seção constante ao longo do vão; flexão em torno do eixo principal horizontal.</li>
+        <li>Cargas verticais e momentos no plano da viga; sem esforço normal.</li>
+        <li>Concreto e madeira: o modelo é uma idealização. Concreto fissurado e efeitos de longa duração (fluência) não são considerados.</li>
+        <li>Método: integração numérica de EI·v″(x) = M(x) pela regra do trapézio (~2000 pontos). As quatro incógnitas M(0), V(0), v(0) e θ(0) vêm das condições de contorno dos apoios — o que permite vigas hiperestáticas.</li>
+      </ul>
+    </details>
+    <details style="margin-top:8px">
+      <summary>Histórico de versões</summary>
+      <ul>
+        <li><b>V02 (20/10/2026)</b> — cálculo por integração da linha elástica (fórmulas tabeladas passam a ser testes); escolha de apoios; múltiplas cargas em posição livre; peso próprio; diagramas V, M e v; deformada real; memória de cálculo; tensões de tração e compressão separadas; critério por material; limite de flecha; modo verificação; ficha do usuário com exportação; aceita vírgula decimal; correção das cargas triangulares.</li>
+        <li><b>V01 (05/10/2026)</b> — versão inicial gerada com o Gemini: viga biapoiada, seis casos de carga por fórmula tabelada.</li>
+      </ul>
+    </details>
+  </div>
+</main>
+</div>
 
-            if (L <= 0 || E <= 0) {
-                errorMessage.textContent = 'Comprimento e Elasticidade devem ser valores positivos.';
-                errorMessage.classList.remove('hidden');
-                return;
-            }
+<script>
+'use strict';
+// ===== SOLVER-START =====
+function sectionProps(s){
+  const cm=0.01;
+  if(s.type==='rect'){const b=s.b*cm,h=s.h*cm;return {I:b*h**3/12,A:b*h,cTop:h/2,cBot:h/2,h};}
+  if(s.type==='circ'){const D=s.D*cm;return {I:Math.PI*D**4/64,A:Math.PI*D*D/4,cTop:D/2,cBot:D/2,h:D};}
+  if(s.type==='tri'){const b=s.b*cm,h=s.h*cm;return {I:b*h**3/36,A:b*h/2,cTop:2*h/3,cBot:h/3,h};}
+  return {I:s.I*1e-8,A:s.A*1e-4,cTop:s.c*cm,cBot:s.c*cm,h:2*s.c*cm};
+}
+function allLoads(st,p){
+  const loads=st.loads.map(o=>({...o}));
+  if(st.selfWeight){const w=st.gamma*p.A;loads.push({type:'q',q1:w,q2:w,a:0,b:st.L,self:true});}
+  return loads;
+}
+// Esforços internos devidos apenas às cargas aplicadas à esquerda da seção x
+function loadEffect(loads,x,inclusive,eps){
+  let V=0,M=0;
+  for(const ld of loads){
+    if(ld.type==='P'){
+      if(inclusive? x>=ld.a-eps/2 : x>ld.a+eps/2){V-=ld.P;M-=ld.P*(x-ld.a);}
+    }else if(ld.type==='M'){
+      if(inclusive? x>=ld.a-eps/2 : x>ld.a+eps/2){M+=ld.M;}
+    }else if(x>ld.a){
+      const u=Math.min(x,ld.b)-ld.a,d=x-ld.a,k=(ld.q2-ld.q1)/(ld.b-ld.a);
+      V-=ld.q1*u+k*u*u/2;
+      M-=ld.q1*(d*u-u*u/2)+k*(d*u*u/2-u*u*u/3);
+    }
+  }
+  return {V,M};
+}
+function gauss(A,b){
+  const n=b.length;A=A.map(r=>r.slice());b=b.slice();const cs=[];
+  for(let j=0;j<n;j++){let m=0;for(let i=0;i<n;i++)m=Math.max(m,Math.abs(A[i][j]));if(m===0)return null;cs[j]=m;for(let i=0;i<n;i++)A[i][j]/=m;}
+  for(let i=0;i<n;i++){const m=Math.max(...A[i].map(Math.abs));if(m===0)return null;A[i]=A[i].map(v=>v/m);b[i]/=m;}
+  for(let k=0;k<n;k++){
+    let p=k;for(let i=k+1;i<n;i++)if(Math.abs(A[i][k])>Math.abs(A[p][k]))p=i;
+    if(Math.abs(A[p][k])<1e-10)return null;
+    [A[k],A[p]]=[A[p],A[k]];[b[k],b[p]]=[b[p],b[k]];
+    for(let i=k+1;i<n;i++){const f=A[i][k]/A[k][k];for(let j=k;j<n;j++)A[i][j]-=f*A[k][j];b[i]-=f*b[k];}
+  }
+  const x=new Array(n).fill(0);
+  for(let i=n-1;i>=0;i--){let s=b[i];for(let j=i+1;j<n;j++)s-=A[i][j]*x[j];x[i]=s/A[i][i];}
+  return x.map((v,j)=>v/cs[j]);
+}
+const RCOUNT={apoio:1,engaste:2,livre:0};
+function hyperDegree(st){return RCOUNT[st.left]+RCOUNT[st.right]-2;}
+function solve(st){
+  const p=sectionProps(st.sec),L=st.L,EI=st.E*p.I;
+  const loads=allLoads(st,p);
+  const deg=hyperDegree(st);
+  if(deg<0)return {error:'Estrutura hipostática (mecanismo): os apoios não impedem o movimento de corpo rígido. Escolha outra combinação de apoios.',deg};
+  const eps=L*1e-7,N=2000;
+  let xs=[];for(let i=0;i<=N;i++)xs.push(L*i/N);
+  for(const ld of loads){
+    if(ld.type==='q')xs.push(ld.a,ld.b);
+    else{xs.push(ld.a);if(ld.a+eps<=L)xs.push(ld.a+eps);}
+  }
+  xs=xs.filter(x=>x>=0&&x<=L).sort((a,b)=>a-b);
+  const X=[xs[0]];for(const x of xs)if(x-X[X.length-1]>L*1e-12)X.push(x);
+  const n=X.length,Vl=new Float64Array(n),Ml=new Float64Array(n),thl=new Float64Array(n),vl=new Float64Array(n);
+  for(let i=0;i<n;i++){const e=loadEffect(loads,X[i],false,eps);Vl[i]=e.V;Ml[i]=e.M;}
+  for(let i=1;i<n;i++){const dx=X[i]-X[i-1];thl[i]=thl[i-1]+(Ml[i]+Ml[i-1])/2*dx/EI;vl[i]=vl[i-1]+(thl[i]+thl[i-1])/2*dx;}
+  const end=loadEffect(loads,L,true,eps);
+  // incógnitas: [M(0), V(0), v(0), θ(0)]
+  const rows=[],rhs=[],add=(r,b)=>{rows.push(r);rhs.push(b);};
+  if(st.left==='apoio'){add([0,0,1,0],0);add([1,0,0,0],0);}
+  else if(st.left==='engaste'){add([0,0,1,0],0);add([0,0,0,1],0);}
+  else{add([1,0,0,0],0);add([0,1,0,0],0);}
+  const rowV=[L*L/(2*EI),L**3/(6*EI),1,L],rowT=[L/EI,L*L/(2*EI),0,1],rowM=[1,L,0,0],rowS=[0,1,0,0];
+  if(st.right==='apoio'){add(rowV,-vl[n-1]);add(rowM,-end.M);}
+  else if(st.right==='engaste'){add(rowV,-vl[n-1]);add(rowT,-thl[n-1]);}
+  else{add(rowM,-end.M);add(rowS,-end.V);}
+  const u=gauss(rows,rhs);
+  if(!u)return {error:'Sistema singular: combinação de apoios instável.',deg};
+  const [MA,VA,v0,t0]=u;
+  const V=new Float64Array(n),M=new Float64Array(n),th=new Float64Array(n),v=new Float64Array(n);
+  for(let i=0;i<n;i++){const x=X[i];
+    V[i]=Vl[i]+VA;M[i]=Ml[i]+MA+VA*x;
+    th[i]=thl[i]+t0+(MA*x+VA*x*x/2)/EI;
+    v[i]=vl[i]+v0+t0*x+(MA*x*x/2+VA*x**3/6)/EI;}
+  const F=-end.V;
+  const RA=st.left!=='livre'?VA:0, MAr=st.left==='engaste'?MA:0;
+  const RB=st.right!=='livre'?-(end.V+VA):0, MBr=st.right==='engaste'?end.M+MA+VA*L:0;
+  let U=0;for(let i=1;i<n;i++)U+=(M[i]*M[i]+M[i-1]*M[i-1])/2*(X[i]-X[i-1]);U/=2*EI;
+  const argmax=a=>{let k=0;for(let i=1;i<a.length;i++)if(Math.abs(a[i])>Math.abs(a[k]))k=i;return k;};
+  const iD=argmax(v),iM=argmax(M),iV=argmax(V);
+  let Mpos=0,Mneg=0;for(const m of M){if(m>Mpos)Mpos=m;if(m<Mneg)Mneg=m;}
+  const sT=Math.max(Mpos*p.cBot,-Mneg*p.cTop)/p.I, sC=Math.max(Mpos*p.cTop,-Mneg*p.cBot)/p.I;
+  return {X,V,M,th,v,EI,p,loads,deg,RA,MA:MAr,RB,MB:MBr,F,resid:RA+RB-F,U,
+    dmax:Math.abs(v[iD]),xd:X[iD],vsign:Math.sign(v[iD]),Mabs:Math.abs(M[iM]),xM:X[iM],Mpos,Mneg,Vabs:Math.abs(V[iV]),
+    sT,sC,smax:Math.max(sT,sC),thA:th[0],thB:th[n-1]};
+}
+function vAt(res,x){const X=res.X;for(let i=1;i<X.length;i++)if(X[i]>=x){const t=(x-X[i-1])/(X[i]-X[i-1]||1);return res.v[i-1]+t*(res.v[i]-res.v[i-1]);}return res.v[res.v.length-1];}
+function mirror(st){const L=st.L;return {...st,left:st.right,right:st.left,loads:st.loads.map(ld=>ld.type==='P'?{...ld,a:L-ld.a}:ld.type==='M'?{...ld,a:L-ld.a,M:-ld.M}:{...ld,a:L-ld.b,b:L-ld.a,q1:ld.q2,q2:ld.q1})};}
+function structName(l,r){const s=[l,r].sort().join('-');
+  return {'apoio-apoio':'Biapoiada','engaste-livre':'Balanço','apoio-engaste':'Apoiada-engastada','engaste-engaste':'Biengastada'}[s]||'Hipostática (mecanismo)';}
 
-            if (x_input_free_end < 0 || x_input_free_end > L) {
-                errorMessage.textContent = 'O ponto de estudo (x) deve estar entre 0 (extremidade livre) e L (engaste).';
-                errorMessage.classList.remove('hidden');
-                return;
-            }
-            
-            // Store current parameters for drawing
-            currentL = L;
-            currentP = P;
-            currentE = E;
-            currentI = I_calculated; // Use the determined I
+// ---------- fórmulas tabeladas ----------
+function matchCase(st){
+  if(st.selfWeight||st.loads.length!==1)return null;
+  const p=sectionProps(st.sec),EI=st.E*p.I,L=st.L,ld=st.loads[0],near=(a,b)=>Math.abs(a-b)<=1e-6*L,S3=Math.sqrt(3);
+  const full=ld.type==='q'&&near(ld.a,0)&&near(ld.b,L);
+  const unif=full&&Math.abs(ld.q1-ld.q2)<1e-9*Math.max(Math.abs(ld.q1),1);
+  const tri=full&&!unif&&(ld.q1===0||ld.q2===0);
+  const S=st.left+'-'+st.right,o=(nome,items)=>({nome,items});
+  if(S==='apoio-apoio'){
+    if(ld.type==='P'&&ld.a>1e-6*L&&ld.a<L-1e-6*L){const P=ld.P,a=ld.a,b=L-a,bb=Math.min(a,b);
+      return o('Biapoiada · carga concentrada P em x = a',[
+        {k:'delta',f:'P·b·(L²−b²)^1,5 / (9√3·L·EI), b = menor distância a um apoio',val:P*bb*Math.pow(L*L-bb*bb,1.5)/(9*S3*L*EI)},
+        {k:'Mmax',f:'P·a·(L−a) / L',val:P*a*b/L},{k:'RA',f:'P·(L−a) / L',val:P*b/L},
+        {k:'U',f:'P²·a²·(L−a)² / (6·EI·L)',val:P*P*a*a*b*b/(6*EI*L)}]);}
+    if(unif){const w=ld.q1;return o('Biapoiada · carga uniforme q',[
+        {k:'delta',f:'5·q·L⁴ / (384·EI)',val:5*w*L**4/(384*EI)},{k:'Mmax',f:'q·L² / 8',val:w*L*L/8},
+        {k:'RA',f:'q·L / 2',val:w*L/2},{k:'U',f:'q²·L⁵ / (240·EI)',val:w*w*L**5/(240*EI)}]);}
+    if(tri){const w=ld.q1+ld.q2,xm=L*Math.sqrt(1-Math.sqrt(8/15)),pk=ld.q1===0?'direita':'esquerda';
+      return o('Biapoiada · carga triangular (pico q₀ à '+pk+')',[
+        {k:'delta',f:'0,00652·q₀·L⁴ / EI  (em x = 0,519·L a partir da extremidade de carga nula)',val:w*xm*(7*L**4-10*L*L*xm*xm+3*xm**4)/(360*L*EI)},
+        {k:'Mmax',f:'q₀·L² / (9√3)',val:w*L*L/(9*S3)},{k:'RA',f:pk==='direita'?'q₀·L / 6':'q₀·L / 3',val:pk==='direita'?w*L/6:w*L/3},
+        {k:'U',f:'q₀²·L⁵ / (945·EI)',val:w*w*L**5/(945*EI)}]);}
+    if(ld.type==='M'&&(near(ld.a,0)||near(ld.a,L))){const m=ld.M;return o('Biapoiada · momento M₀ em uma extremidade',[
+        {k:'delta',f:'M₀·L² / (9√3·EI)',val:m*L*L/(9*S3*EI)},{k:'Mmax',f:'M₀',val:m},{k:'RA',f:'M₀ / L',val:m/L},{k:'U',f:'M₀²·L / (6·EI)',val:m*m*L/(6*EI)}]);}
+  }
+  if(S==='engaste-livre'){
+    if(ld.type==='P'&&near(ld.a,L)){const P=ld.P;return o('Balanço · carga P na ponta',[
+        {k:'delta',f:'P·L³ / (3·EI)',val:P*L**3/(3*EI)},{k:'Mmax',f:'P·L',val:P*L},{k:'RA',f:'P',val:P},{k:'U',f:'P²·L³ / (6·EI)',val:P*P*L**3/(6*EI)}]);}
+    if(unif){const w=ld.q1;return o('Balanço · carga uniforme q',[
+        {k:'delta',f:'q·L⁴ / (8·EI)',val:w*L**4/(8*EI)},{k:'Mmax',f:'q·L² / 2',val:w*L*L/2},{k:'RA',f:'q·L',val:w*L},{k:'U',f:'q²·L⁵ / (40·EI)',val:w*w*L**5/(40*EI)}]);}
+    if(ld.type==='M'&&near(ld.a,L)){const m=ld.M;return o('Balanço · momento M₀ na ponta',[
+        {k:'delta',f:'M₀·L² / (2·EI)',val:m*L*L/(2*EI)},{k:'Mmax',f:'M₀',val:m},{k:'U',f:'M₀²·L / (2·EI)',val:m*m*L/(2*EI)}]);}
+  }
+  if(S==='engaste-apoio'){
+    if(unif){const w=ld.q1;return o('Apoiada-engastada · carga uniforme q',[
+        {k:'delta',f:'q·L⁴ / (185·EI)  [coef. exato (39+55√33)/65536]',val:(39+55*Math.sqrt(33))/65536*w*L**4/EI},
+        {k:'Mmax',f:'q·L² / 8  (no engaste)',val:w*L*L/8},{k:'RB',f:'3·q·L / 8  (no apoio)',val:3*w*L/8}]);}
+    if(ld.type==='P'&&near(ld.a,L/2)){const P=ld.P;return o('Apoiada-engastada · carga P no centro',[
+        {k:'delta',f:'P·L³ / (48√5·EI)',val:P*L**3/(48*Math.sqrt(5)*EI)},{k:'Mmax',f:'3·P·L / 16  (no engaste)',val:3*P*L/16},{k:'RB',f:'5·P / 16  (no apoio)',val:5*P/16}]);}
+  }
+  if(S==='engaste-engaste'){
+    if(unif){const w=ld.q1;return o('Biengastada · carga uniforme q',[
+        {k:'delta',f:'q·L⁴ / (384·EI)',val:w*L**4/(384*EI)},{k:'Mmax',f:'q·L² / 12  (nos engastes)',val:w*L*L/12},{k:'RA',f:'q·L / 2',val:w*L/2}]);}
+    if(ld.type==='P'&&near(ld.a,L/2)){const P=ld.P;return o('Biengastada · carga P no centro',[
+        {k:'delta',f:'P·L³ / (192·EI)',val:P*L**3/(192*EI)},{k:'Mmax',f:'P·L / 8',val:P*L/8},{k:'RA',f:'P / 2',val:P/2}]);}
+  }
+  return null;
+}
+function tabulated(st){
+  let m=matchCase(st);if(m){m.mirrored=false;return m;}
+  m=matchCase(mirror(st));if(m){m.mirrored=true;return m;}
+  return null;
+}
+const QLABEL={delta:'Flecha máxima δmáx',Mmax:'Momento máximo |M|máx',RA:'Reação vertical esquerda',RB:'Reação vertical direita',U:'Energia de deformação U'};
+function appValue(res,k,mirrored){
+  if(mirrored&&k==='RA')k='RB';else if(mirrored&&k==='RB')k='RA';
+  return {delta:res.dmax,Mmax:res.Mabs,RA:Math.abs(res.RA),RB:Math.abs(res.RB),U:res.U}[k];
+}
+function compareTab(st,res){
+  const t=tabulated(st);if(!t)return null;
+  t.rows=t.items.map(it=>{const exp=Math.abs(it.val),app=appValue(res,it.k,t.mirrored);
+    const k=t.mirrored?(it.k==='RA'?'RB':it.k==='RB'?'RA':it.k):it.k;
+    return {k,label:QLABEL[k],f:it.f,exp,app,err:exp===0?Math.abs(app):Math.abs(app-exp)/exp};});
+  return t;
+}
 
-            // Calculate deflection for the specific 'x' from input (x is already from free end)
-            const deflectionAtX = getDeflectionValue(x_input_free_end, L, P, E, I_calculated);
+// ---------- suíte de verificação ----------
+const TOL=0.005;
+function baseState(o){return Object.assign({L:4,left:'apoio',right:'apoio',material:'aco',E:200e9,f:250e6,gamma:78.5e3,sec:{type:'rect',b:10,h:20},selfWeight:false,n:250,loads:[]},o);}
+const Pk=10e3,Wk=10e3,Mk=10e3;
+function benchCases(){return [
+  ['Biapoiada · P no centro',baseState({loads:[{type:'P',P:Pk,a:2}]})],
+  ['Biapoiada · P fora do centro (a = 0,7L)',baseState({loads:[{type:'P',P:Pk,a:2.8}]})],
+  ['Biapoiada · carga uniforme',baseState({loads:[{type:'q',q1:Wk,q2:Wk,a:0,b:4}]})],
+  ['Biapoiada · triangular, pico à direita',baseState({loads:[{type:'q',q1:0,q2:Wk,a:0,b:4}]})],
+  ['Biapoiada · triangular, pico à esquerda',baseState({loads:[{type:'q',q1:Wk,q2:0,a:0,b:4}]})],
+  ['Biapoiada · momento na extremidade direita',baseState({loads:[{type:'M',M:Mk,a:4}]})],
+  ['Balanço · P na ponta',baseState({left:'engaste',right:'livre',loads:[{type:'P',P:Pk,a:4}]})],
+  ['Balanço · carga uniforme',baseState({left:'engaste',right:'livre',loads:[{type:'q',q1:Wk,q2:Wk,a:0,b:4}]})],
+  ['Balanço · momento na ponta',baseState({left:'engaste',right:'livre',loads:[{type:'M',M:Mk,a:4}]})],
+  ['Balanço invertido (engaste à direita) · P na ponta',baseState({left:'livre',right:'engaste',loads:[{type:'P',P:Pk,a:0}]})],
+  ['Apoiada-engastada · carga uniforme',baseState({left:'engaste',right:'apoio',loads:[{type:'q',q1:Wk,q2:Wk,a:0,b:4}]})],
+  ['Apoiada-engastada · P no centro',baseState({left:'engaste',right:'apoio',loads:[{type:'P',P:Pk,a:2}]})],
+  ['Biengastada · carga uniforme',baseState({left:'engaste',right:'engaste',loads:[{type:'q',q1:Wk,q2:Wk,a:0,b:4}]})],
+  ['Biengastada · P no centro',baseState({left:'engaste',right:'engaste',loads:[{type:'P',P:Pk,a:2}]})],
+];}
+function runBench(){const out=[];
+  for(const [nome,st] of benchCases()){const res=solve(st),t=compareTab(st,res);
+    if(!t){out.push({nome,st,label:'—',f:'caso não reconhecido',exp:NaN,app:NaN,err:NaN,ok:false});continue;}
+    for(const r of t.rows)out.push({nome,st,label:r.label,f:r.f,exp:r.exp,app:r.app,err:r.err,ok:r.err<=TOL,unit:r.k});}
+  return out;}
+function runSanity(){
+  const ssq=baseState({loads:[{type:'q',q1:Wk,q2:Wk,a:0,b:4}]});
+  const ssp=baseState({loads:[{type:'P',P:Pk,a:2}]});
+  const combo=baseState({left:'engaste',right:'apoio',loads:[{type:'P',P:12e3,a:1.1},{type:'q',q1:4e3,q2:12e3,a:0.5,b:3},{type:'M',M:6e3,a:3.2}]});
+  const d=st=>solve(st).dmax,T=[];
+  const ratio=(nome,a,b,exp,st)=>{const got=d(b)/d(a);T.push({nome,exp,got,err:Math.abs(got-exp)/exp,st,fmtRatio:true});};
+  ratio('Linearidade: dobrar a carga dobra a flecha',ssq,baseState({loads:[{type:'q',q1:2*Wk,q2:2*Wk,a:0,b:4}]}),2,ssq);
+  ratio('Seção: dobrar a altura h divide a flecha por 8',ssq,baseState({sec:{type:'rect',b:10,h:40},loads:ssq.loads}),1/8,ssq);
+  ratio('Vão (P central): dobrar L multiplica a flecha por 8',ssp,baseState({L:8,loads:[{type:'P',P:Pk,a:4}]}),8,ssp);
+  ratio('Vão (carga uniforme): dobrar L multiplica a flecha por 16',ssq,baseState({L:8,loads:[{type:'q',q1:Wk,q2:Wk,a:0,b:8}]}),16,ssq);
+  ratio('Material: trocar aço (200 GPa) por alumínio (70 GPa) multiplica a flecha por 200/70',ssq,baseState({E:70e9,loads:ssq.loads}),200/70,ssq);
+  ratio('Simetria: espelhar a carga triangular não muda a flecha',baseState({loads:[{type:'q',q1:0,q2:Wk,a:0,b:4}]}),baseState({loads:[{type:'q',q1:Wk,q2:0,a:0,b:4}]}),1,baseState({loads:[{type:'q',q1:Wk,q2:0,a:0,b:4}]}));
+  ratio('Simetria: espelhar viga e cargas (combinação qualquer) não muda a flecha',combo,mirror(combo),1,combo);
+  { const parts=combo.loads.map(l=>vAt(solve({...combo,loads:[l]}),2)).reduce((a,b)=>a+b,0),all=vAt(solve(combo),2);
+    T.push({nome:'Superposição: v(L/2) da combinação = soma das parcelas',exp:parts*1e3,got:all*1e3,err:Math.abs(all-parts)/Math.abs(parts),st:combo,unitTxt:'mm'}); }
+  { const r=solve(combo);T.push({nome:'Equilíbrio: R_esq + R_dir − carga total = 0',exp:0,got:r.resid,err:Math.abs(r.resid)/r.F,st:combo,unitTxt:'N'}); }
+  T.forEach(t=>t.ok=t.err<=TOL);return T;
+}
+// ===== SOLVER-END =====
 
-            // Display the result for the specific 'x'
-            deflectionValueSpan.textContent = deflectionAtX.toExponential(4); // Use scientific notation for clarity
-            resultBox.classList.remove('hidden');
+// ================= INTERFACE =================
+const $=id=>document.getElementById(id);
+const MAT={
+  aco:{E:200,f:250,g:78.5,fl:'f_y [MPa]',hint:'f_y = escoamento. Aço: f_y típico 250–350 MPa (estrutural).',crit:'max',
+       msg:'σmáx supera o escoamento: o aço plastifica e o modelo elástico linear deixa de valer.'},
+  aluminio:{E:70,f:150,g:27,fl:'f₀,₂ [MPa]',hint:'f₀,₂ = escoamento convencional. Alumínio: depende muito da liga (≈ 70–400 MPa).',crit:'max',
+       msg:'σmáx supera o escoamento da liga: o modelo elástico linear deixa de valer.'},
+  madeira:{E:12,f:40,g:6,fl:'f_m [MPa]',hint:'f_m = resistência à flexão de referência. Madeira: valores variam com a espécie e a classe de resistência; confira na NBR 7190. Ruptura frágil na tração.',crit:'max',
+       msg:'σmáx supera a resistência de referência da madeira: risco de ruptura (comportamento frágil).'},
+  concreto:{E:30,f:3,g:25,fl:'f_ct [MPa]',hint:'f_ct = resistência à tração na flexão. Concreto sem armadura: o critério é a tração (fissuração). Não há "escoamento".',crit:'tension',
+       msg:'A tração supera f_ct: o concreto fissura e a seção homogênea deixa de representar a viga (seria necessário armadura e outro modelo).'},
+  custom:{E:200,f:250,g:78.5,fl:'f [MPa]',hint:'f = resistência de referência. Informe E, a resistência de referência e o peso específico do seu material.',crit:'max',
+       msg:'σmáx supera a resistência de referência informada.'}
+};
+let uiLoads=[];
+const num=s=>{s=String(s).trim().replace(',','.');return s===''?NaN:Number(s);};
+const SUP='⁰¹²³⁴⁵⁶⁷⁸⁹';
+function fmt(x,s=4){if(x===undefined||!isFinite(x))return '—';if(x===0)return '0';const ax=Math.abs(x);
+  if(ax<1e-3||ax>=1e6){const e=Math.floor(Math.log10(ax));const m=x/10**e;return m.toLocaleString('pt-BR',{maximumSignificantDigits:s})+'×10'+(e<0?'⁻':'')+String(Math.abs(e)).split('').map(c=>SUP[c]).join('');}
+  return x.toLocaleString('pt-BR',{maximumSignificantDigits:s});}
+const fx=x=>x.toLocaleString('pt-BR',{maximumFractionDigits:3});
+const clean=(x,ref)=>Math.abs(x)<1e-9*Math.max(ref,1)?0:x;
+const pct=e=>!isFinite(e)?'—':e===0?'0 %':e<1e-6?'< 0,0001 %':(e*100).toLocaleString('pt-BR',{maximumSignificantDigits:2})+' %';
 
-            // Draw the beam and deflection curve
-            drawBeamAndDeflection();
-        }
+function renderLoads(){
+  const box=$('loads');box.innerHTML='';
+  uiLoads.forEach((ld,i)=>{
+    const d=document.createElement('div');d.className='load';
+    let f='';
+    if(ld.type==='P')f=`<div class="row2"><div><label>P [kN]</label><input type="text" data-i="${i}" data-k="P" value="${ld.P}"></div><div><label>Posição a [m]</label><input type="text" data-i="${i}" data-k="a" value="${ld.a}"></div></div>`;
+    if(ld.type==='q')f=`<div class="row2"><div><label>q no início [kN/m]</label><input type="text" data-i="${i}" data-k="q1" value="${ld.q1}"></div><div><label>q no fim [kN/m]</label><input type="text" data-i="${i}" data-k="q2" value="${ld.q2}"></div><div><label>Início a [m]</label><input type="text" data-i="${i}" data-k="a" value="${ld.a}"></div><div><label>Fim b [m]</label><input type="text" data-i="${i}" data-k="b" value="${ld.b}"></div></div><div class="hint">q iguais = uniforme; um deles zero = triangular.</div>`;
+    if(ld.type==='M')f=`<div class="row2"><div><label>M₀ [kN·m] (horário +)</label><input type="text" data-i="${i}" data-k="M" value="${ld.M}"></div><div><label>Posição a [m]</label><input type="text" data-i="${i}" data-k="a" value="${ld.a}"></div></div>`;
+    d.innerHTML=`<div class="top"><select data-i="${i}" data-k="type"><option value="P"${ld.type==='P'?' selected':''}>Carga concentrada</option><option value="q"${ld.type==='q'?' selected':''}>Carga distribuída (uniforme/linear)</option><option value="M"${ld.type==='M'?' selected':''}>Momento concentrado</option></select><button class="btn small" data-rm="${i}" title="Remover">✕</button></div>${f}`;
+    box.appendChild(d);
+  });
+}
+function defaultLoad(type){const L=num($('L').value)||2;
+  if(type==='P')return {type,P:'10',a:fx(L/2)};if(type==='q')return {type,q1:'10',q2:'10',a:'0',b:fx(L)};return {type,M:'10',a:fx(L)};}
 
-        function drawBeamAndDeflection() {
-            if (currentL === 0 || currentP === 0 || currentE === 0 || currentI === 0) {
-                // Don't draw if parameters are not set or invalid
-                return;
-            }
+function readState(){
+  const errs=[];
+  const g=(id,lab,pos=true)=>{const v=num($(id).value);if(!isFinite(v))errs.push(`${lab}: valor inválido.`);else if(pos&&v<=0)errs.push(`${lab} deve ser maior que zero.`);return v;};
+  const L=g('L','Comprimento L');
+  const st={L,left:$('left').value,right:$('right').value,material:$('material').value,
+    E:g('E','Módulo E')*1e9,f:g('f','Resistência de referência')*1e6,gamma:g('gamma','Peso específico γ')*1e3,
+    selfWeight:$('selfWeight').checked,n:g('nLim','n do limite de flecha'),sec:{type:$('secType').value},loads:[]};
+  const t=st.sec.type;
+  if(t==='rect'){st.sec.b=g('rect_b','Base b');st.sec.h=g('rect_h','Altura h');}
+  else if(t==='circ'){st.sec.D=g('circ_D','Diâmetro D');}
+  else if(t==='tri'){st.sec.b=g('tri_b','Base b');st.sec.h=g('tri_h','Altura h');}
+  else{st.sec.I=g('cus_I','Inércia I');st.sec.c=g('cus_c','c máx');st.sec.A=g('cus_A','Área A');}
+  uiLoads.forEach((ld,i)=>{const n=i+1,inL=(x,lab)=>{if(!isFinite(x))errs.push(`Carga ${n}: ${lab} inválido.`);else if(isFinite(L)&&(x<0||x>L+1e-12))errs.push(`Carga ${n}: ${lab} deve estar entre 0 e L.`);};
+    if(ld.type==='P'){const P=num(ld.P)*1e3,a=num(ld.a);if(!isFinite(P))errs.push(`Carga ${n}: P inválido.`);inL(a,'posição a');st.loads.push({type:'P',P,a});}
+    else if(ld.type==='M'){const M=num(ld.M)*1e3,a=num(ld.a);if(!isFinite(M))errs.push(`Carga ${n}: M₀ inválido.`);inL(a,'posição a');st.loads.push({type:'M',M,a});}
+    else{const q1=num(ld.q1)*1e3,q2=num(ld.q2)*1e3,a=num(ld.a),b=num(ld.b);if(!isFinite(q1)||!isFinite(q2))errs.push(`Carga ${n}: valores de q inválidos.`);inL(a,'início a');inL(b,'fim b');if(b<=a)errs.push(`Carga ${n}: o fim b deve ser maior que o início a.`);st.loads.push({type:'q',q1,q2,a,b});}
+  });
+  if(!st.loads.length&&!st.selfWeight)errs.push('Adicione ao menos uma carga ou ative o peso próprio.');
+  return {st,errs};
+}
+function showSec(){['rect','circ','tri','custom'].forEach(k=>$('sec_'+k).style.display=$('secType').value===k?'':'none');}
+function applyMaterial(){const m=MAT[$('material').value];$('E').value=fx(m.E);$('f').value=fx(m.f);$('gamma').value=fx(m.g);matLabels();}
+function matLabels(){const m=MAT[$('material').value];$('fLabel').textContent=m.fl;$('matHint').textContent=m.hint;}
 
-            // Set canvas resolution for drawing
-            canvas.width = canvas.offsetWidth;
-            canvas.height = 300; // Fixed height for visualization
+function setState(st){
+  $('L').value=fx(st.L);$('left').value=st.left;$('right').value=st.right;$('material').value=st.material;
+  $('E').value=fx(st.E/1e9);$('f').value=fx(st.f/1e6);$('gamma').value=fx(st.gamma/1e3);matLabels();
+  $('secType').value=st.sec.type;showSec();
+  if(st.sec.type==='rect'){$('rect_b').value=fx(st.sec.b);$('rect_h').value=fx(st.sec.h);}
+  if(st.sec.type==='circ')$('circ_D').value=fx(st.sec.D);
+  if(st.sec.type==='tri'){$('tri_b').value=fx(st.sec.b);$('tri_h').value=fx(st.sec.h);}
+  if(st.sec.type==='custom'){$('cus_I').value=fx(st.sec.I);$('cus_c').value=fx(st.sec.c);$('cus_A').value=fx(st.sec.A);}
+  $('selfWeight').checked=!!st.selfWeight;$('nLim').value=fx(st.n||250);
+  uiLoads=st.loads.map(l=>l.type==='P'?{type:'P',P:fx(l.P/1e3),a:fx(l.a)}:l.type==='M'?{type:'M',M:fx(l.M/1e3),a:fx(l.a)}:{type:'q',q1:fx(l.q1/1e3),q2:fx(l.q2/1e3),a:fx(l.a),b:fx(l.b)});
+  renderLoads();update();
+}
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+// ---------- desenho ----------
+const NS='http://www.w3.org/2000/svg';
+function support(type,x,y,side){
+  const c='#3d4752';let s='';
+  if(type==='apoio'){
+    s+=`<polygon points="${x},${y+4} ${x-13},${y+26} ${x+13},${y+26}" fill="#fff" stroke="${c}" stroke-width="2"/>`;
+    let gy=y+26;
+    if(side==='R'){s+=`<circle cx="${x-6}" cy="${y+31}" r="4" fill="#fff" stroke="${c}" stroke-width="1.6"/><circle cx="${x+6}" cy="${y+31}" r="4" fill="#fff" stroke="${c}" stroke-width="1.6"/>`;gy=y+36;}
+    s+=`<line x1="${x-20}" y1="${gy}" x2="${x+20}" y2="${gy}" stroke="${c}" stroke-width="2"/>`;
+    for(let i=-18;i<=14;i+=8)s+=`<line x1="${x+i}" y1="${gy}" x2="${x+i+6}" y2="${gy+7}" stroke="${c}" stroke-width="1"/>`;
+  }else if(type==='engaste'){
+    const d=side==='L'?-1:1;
+    s+=`<line x1="${x}" y1="${y-32}" x2="${x}" y2="${y+32}" stroke="${c}" stroke-width="3"/>`;
+    for(let yy=y-30;yy<=y+26;yy+=8)s+=`<line x1="${x}" y1="${yy}" x2="${x+d*9}" y2="${yy+7}" stroke="${c}" stroke-width="1"/>`;
+  }
+  return s;
+}
+function drawBeam(st,res){
+  const W=820,H=270,ml=70,mr=70,y0=135,L=st.L,sx=(W-ml-mr)/L,X=x=>ml+x*sx,col='#37424e';
+  let s=`<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="${col}"/></marker>
+  <marker id="ahs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#9aa4ae"/></marker></defs>`;
+  const loads=res&&!res.error?res.loads:allLoads(st,sectionProps(st.sec));
+  const qs=loads.filter(l=>l.type==='q').sort((A,B)=>(B.self?1:0)-(A.self?1:0)),qmax=Math.max(1e-12,...qs.map(l=>Math.max(Math.abs(l.q1),Math.abs(l.q2))));
+  let stackTop=y0-8;
+  qs.forEach((l,j)=>{
+    const base=y0-8,hh=q=>l.self?7:6+44*Math.abs(q)/qmax,c=l.self?'#9aa4ae':col,mk=l.self?'ahs':'ah';
+    const x1=X(l.a),x2=X(l.b),h1=hh(l.q1),h2=hh(l.q2),off=j*0;
+    s+=`<polygon points="${x1},${base} ${x1},${base-h1} ${x2},${base-h2} ${x2},${base}" fill="${l.self?'#eef0f2':'#e9edf1'}" stroke="${c}" stroke-width="1.2" ${l.self?'stroke-dasharray="4 3"':''}/>`;
+    const nA=Math.max(2,Math.round((x2-x1)/32));
+    for(let i=0;i<=nA;i++){const t=i/nA,xx=x1+t*(x2-x1),q=l.q1+t*(l.q2-l.q1),h=hh(q);if(Math.abs(q)<1e-9)continue;
+      s+=q>0?`<line x1="${xx}" y1="${base-h}" x2="${xx}" y2="${base}" stroke="${c}" stroke-width="1.2" marker-end="url(#${mk})"/>`:`<line x1="${xx}" y1="${base}" x2="${xx}" y2="${base-h}" stroke="${c}" stroke-width="1.2" marker-end="url(#${mk})"/>`;}
+    const lab=l.self?`peso próprio ${fmt(l.q1/1e3,3)} kN/m`:(Math.abs(l.q1-l.q2)<1e-9?`${fmt(l.q1/1e3,3)} kN/m`:`${fmt(l.q1/1e3,3)} → ${fmt(l.q2/1e3,3)} kN/m`);
+    if(l.self)s+=`<text x="${ml}" y="${H-8}" class="muted">tracejado cinza: ${lab}</text>`;else s+=`<text x="${(x1+x2)/2}" y="${base-Math.max(h1,h2)-6}" text-anchor="middle">${lab}</text>`;
+    stackTop=Math.min(stackTop,base-Math.max(h1,h2)-20);
+  });
+  s+=`<line x1="${X(0)}" y1="${y0}" x2="${X(L)}" y2="${y0}" class="beam"/>`;
+  loads.filter(l=>l.type==='P').forEach(l=>{const x=X(l.a),top=Math.min(stackTop,y0-60)-10;
+    s+=l.P>=0?`<line x1="${x}" y1="${top}" x2="${x}" y2="${y0-5}" stroke="${col}" stroke-width="2.2" marker-end="url(#ah)"/>`:`<line x1="${x}" y1="${y0-5}" x2="${x}" y2="${top}" stroke="${col}" stroke-width="2.2" marker-end="url(#ah)"/>`;
+    s+=`<text x="${x}" y="${top-6}" text-anchor="middle" font-weight="600">P = ${fmt(l.P/1e3,3)} kN</text>`;});
+  loads.filter(l=>l.type==='M').forEach(l=>{const cx=X(l.a),r=22,cw=l.M>=0;
+    s+=cw?`<path d="M${cx-r},${y0} A${r},${r} 0 0 1 ${cx+r},${y0}" fill="none" stroke="${col}" stroke-width="2" marker-end="url(#ah)"/>`
+          :`<path d="M${cx+r},${y0} A${r},${r} 0 0 0 ${cx-r},${y0}" fill="none" stroke="${col}" stroke-width="2" marker-end="url(#ah)"/>`;
+    s+=`<text x="${cx}" y="${y0-r-8}" text-anchor="middle" font-weight="600">M₀ = ${fmt(l.M/1e3,3)} kN·m</text>`;});
+  s+=support(st.left,X(0),y0,'L')+support(st.right,X(L),y0,'R');
+  if(res&&!res.error&&res.dmax>0){
+    const k=48/res.dmax;let pts=[];const step=Math.max(1,Math.floor(res.X.length/600));
+    for(let i=0;i<res.X.length;i+=step)pts.push(`${X(res.X[i]).toFixed(1)},${(y0-res.v[i]*k).toFixed(1)}`);
+    pts.push(`${X(res.X[res.X.length-1]).toFixed(1)},${(y0-res.v[res.v.length-1]*k).toFixed(1)}`);
+    s+=`<polyline points="${pts.join(' ')}" fill="none" stroke="var(--cD)" stroke-width="2.4" stroke-dasharray="7 4"/>`;
+    const xd=X(res.xd),yd=y0+res.vsign*-1*48;
+    s+=`<circle cx="${xd}" cy="${yd}" r="4" fill="var(--cD)"/><text x="${xd}" y="${yd+(res.vsign<0?18:-10)}" text-anchor="middle" fill="var(--cD)" style="fill:var(--cD);font-weight:600">δmáx = ${fmt(res.dmax*1e3,4)} mm (x = ${fmt(res.xd,3)} m)</text>`;
+    s+=`<text x="${W-mr}" y="${H-8}" text-anchor="end" class="muted">escala da deformada ≈ ${fmt(k,2)}× (ilustrativa)</text>`;
+  }
+  const yd2=y0+70;
+  s+=`<line x1="${X(0)}" y1="${yd2}" x2="${X(L)}" y2="${yd2}" stroke="#9aa4ae" marker-start="url(#ahs)" marker-end="url(#ahs)"/><text x="${X(L/2)}" y="${yd2+16}" text-anchor="middle">L = ${fmt(L,4)} m</text>`;
+  $('beamSvg').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Esquema da viga com cargas e deformada">${s}</svg>`;
+}
+function plot(id,X,Y,{color,unit,invert,scale,L}){
+  const W=820,H=200,ml=70,mr=70,mt=26,mb=30,pw=W-ml-mr,ph=H-mt-mb;
+  const ys=Array.from(Y,y=>y*scale);let hi=Math.max(0,...ys),lo=Math.min(0,...ys);
+  const amp=Math.max(Math.abs(hi),Math.abs(lo));if(amp<1e-12){hi=1;lo=-1;}
+  for(let i=0;i<ys.length;i++)if(Math.abs(ys[i])<amp*1e-9)ys[i]=0;
+  const px=x=>ml+x/L*pw,py=v=>invert?mt+(v-lo)/(hi-lo)*ph:mt+(hi-v)/(hi-lo)*ph,pz=py(0);
+  const step=Math.max(1,Math.floor(ys.length/800));let d='';
+  for(let i=0;i<ys.length;i+=step)d+=`${px(X[i]).toFixed(1)},${py(ys[i]).toFixed(1)} `;
+  d+=`${px(X[X.length-1]).toFixed(1)},${py(ys[ys.length-1]).toFixed(1)}`;
+  let s=`<polygon points="${px(X[0])},${pz} ${d} ${px(X[X.length-1])},${pz}" fill="${color}" fill-opacity=".14" stroke="none"/>`;
+  s+=`<line x1="${ml}" y1="${pz}" x2="${ml+pw}" y2="${pz}" stroke="#8a949e" stroke-width="1"/>`;
+  s+=`<polyline points="${d}" fill="none" stroke="${color}" stroke-width="2"/>`;
+  const iMax=ys.indexOf(Math.max(...ys)),iMin=ys.indexOf(Math.min(...ys));
+  const lab=(i)=>{const v=ys[i];if(v===0)return '';const x=px(X[i]),y=py(v),up=(invert?v<0:v>0);
+    const anchor=x<ml+60?'start':x>ml+pw-60?'end':'middle';
+    return `<circle cx="${x}" cy="${y}" r="3" fill="${color}"/><text x="${x}" y="${up?y-7:y+15}" text-anchor="${anchor}" style="fill:${color};font-weight:600">${fmt(v,4)} ${unit} (x = ${fmt(X[i],3)} m)</text>`;};
+  s+=lab(iMax);if(iMin!==iMax)s+=lab(iMin);
+  s+=`<text x="${ml-8}" y="${pz+4}" text-anchor="end" class="muted">x = 0</text><text x="${ml+pw+8}" y="${pz+4}" class="muted">${fmt(L,4)} m</text>`;
+  $(id).innerHTML=`<svg viewBox="0 0 ${W} ${H}">${s}</svg>`;
+}
 
-            const beamLengthPx = canvas.width * 0.8; // Use 80% of canvas width for beam
-            const beamStartX = (canvas.width - beamLengthPx) / 2; // Left side of the beam drawing (free end)
-            const beamBaseY = canvas.height / 2; // Mid-height of canvas
-            const beamEndX = beamStartX + beamLengthPx; // Right side of the beam drawing (fixed end)
-
-            // --- Draw Fixed Support (Engaste) on the RIGHT side ---
-            ctx.strokeStyle = '#4A2A38'; /* Darker outline for support */
-            ctx.fillStyle = '#E9A6C2';   /* Darker pink fill for support */
-            const wallWidth = 20;
-            const wallHeight = 80;
-            // Position at the right end of the beam drawing
-            ctx.fillRect(beamEndX, beamBaseY - wallHeight / 2, wallWidth, wallHeight);
-            // Hatching for fixed support
-            ctx.beginPath();
-            ctx.strokeStyle = '#4A2A38'; /* Darker outline for hatching */
-            for (let i = 0; i < wallHeight / 10; i++) {
-                ctx.moveTo(beamEndX, beamBaseY - wallHeight / 2 + i * 10);
-                ctx.lineTo(beamEndX + wallWidth, beamBaseY - wallHeight / 2 + i * 10 + 10);
-            }
-            ctx.stroke();
-
-            // --- Draw Beam ---
-            ctx.beginPath();
-            ctx.strokeStyle = '#4A2A38'; /* Darker beam line */
-            ctx.lineWidth = 4;
-            ctx.moveTo(beamStartX, beamBaseY); // Start at left (free end)
-            ctx.lineTo(beamEndX, beamBaseY); // End at right (fixed end)
-            ctx.stroke();
-
-            // --- Draw Load (P) at the free end (LEFT side) ---
-            ctx.beginPath();
-            ctx.strokeStyle = '#DAA520'; /* Gold for load */
-            ctx.fillStyle = '#DAA520'; /* Gold for load */
-            ctx.lineWidth = 2;
-            const arrowHeadSize = 10;
-            // Line at the free end (left side of the beam)
-            ctx.moveTo(beamStartX, beamBaseY - 30);
-            ctx.lineTo(beamStartX, beamBaseY);
-            // Arrowhead
-            ctx.moveTo(beamStartX, beamBaseY);
-            ctx.lineTo(beamStartX - arrowHeadSize / 2, beamBaseY - arrowHeadSize);
-            ctx.moveTo(beamStartX, beamBaseY);
-            ctx.lineTo(beamStartX + arrowHeadSize / 2, beamBaseY - arrowHeadSize);
-            ctx.stroke();
-            ctx.font = '14px Inter';
-            ctx.fillText('P', beamStartX - 20, beamBaseY - 20); // Label 'P' to the left of the load
-
-            // --- Draw Reaction Forces (Ry, Rx) and Moment (M) at Fixed End (RIGHT side) ---
-            // Ry (Vertical Reaction) - Upwards reaction to P
-            ctx.beginPath();
-            ctx.strokeStyle = '#DAA520'; /* Gold for reactions */
-            ctx.fillStyle = '#DAA520'; /* Gold for reactions */
-            ctx.lineWidth = 2;
-            ctx.moveTo(beamEndX + 10, beamBaseY + 30);
-            ctx.lineTo(beamEndX + 10, beamBaseY);
-            ctx.lineTo(beamEndX + 10 - arrowHeadSize / 2, beamBaseY + arrowHeadSize);
-            ctx.moveTo(beamEndX + 10, beamBaseY);
-            ctx.lineTo(beamEndX + 10 + arrowHeadSize / 2, beamBaseY + arrowHeadSize);
-            ctx.stroke();
-            ctx.font = '14px Inter';
-            ctx.fillText('Ry', beamEndX + 15, beamBaseY + 35);
-
-            // Rx (Horizontal Reaction) - Drawing as per image, pointing left (assuming no horizontal load, but shown for diagram consistency)
-            ctx.beginPath();
-            ctx.strokeStyle = '#DAA520'; /* Gold for reactions */
-            ctx.fillStyle = '#DAA520'; /* Gold for reactions */
-            ctx.lineWidth = 2;
-            ctx.moveTo(beamEndX + 30, beamBaseY + 10);
-            ctx.lineTo(beamEndX, beamBaseY + 10);
-            ctx.lineTo(beamEndX + arrowHeadSize, beamBaseY + 10 - arrowHeadSize / 2);
-            ctx.moveTo(beamEndX, beamBaseY + 10);
-            ctx.lineTo(beamEndX + arrowHeadSize, beamBaseY + 10 + arrowHeadSize / 2);
-            ctx.stroke();
-            ctx.font = '14px Inter';
-            ctx.fillText('Rx', beamEndX + 35, beamBaseY + 15);
-
-            // M (Moment Reaction) - Counter-clockwise reaction to P causing clockwise rotation
-            ctx.beginPath();
-            ctx.strokeStyle = '#DAA520'; /* Gold for moment */
-            ctx.fillStyle = '#DAA520'; /* Gold for moment */
-            ctx.lineWidth = 2;
-            const arcRadius = 20;
-            // Arc for counter-clockwise moment
-            ctx.arc(beamEndX, beamBaseY - arcRadius, arcRadius, Math.PI * 0.5, Math.PI * 1.5, true); 
-            // Arrowhead for moment (pointing counter-clockwise)
-            const angleForArrow = Math.PI * 0.5 + 0.1; // A little past the start of the arc for arrow
-            const arrowX = beamEndX + arcRadius * Math.cos(angleForArrow);
-            const arrowY = beamBaseY - arcRadius + arcRadius * Math.sin(angleForArrow);
-            ctx.moveTo(arrowX, arrowY);
-            ctx.lineTo(arrowX + arrowHeadSize * Math.cos(angleForArrow - Math.PI / 2 + 0.3), arrowY + arrowHeadSize * Math.sin(angleForArrow - Math.PI / 2 + 0.3));
-            ctx.moveTo(arrowX, arrowY);
-            ctx.lineTo(arrowX + arrowHeadSize * Math.cos(angleForArrow - Math.PI / 2 - 0.3), arrowY + arrowHeadSize * Math.sin(angleForArrow - Math.PI / 2 - 0.3));
-            ctx.stroke();
-            ctx.font = '14px Inter';
-            ctx.fillText('M', beamEndX + 25, beamBaseY - 25);
-
-
-            // --- Draw L and X labels ---
-            ctx.fillStyle = '#4A2A38'; /* Darker text for labels */
-            ctx.font = '12px Inter';
-            ctx.fillText('L', beamStartX + beamLengthPx / 2, beamBaseY + 20); // Label for L
-            ctx.fillText('x=0', beamStartX - 10, beamBaseY + 15); // x=0 at free end (left)
-            ctx.fillText('x=L', beamEndX - 10, beamBaseY + 15); // x=L at fixed end (right)
-
-
-            // --- Plot Deflection Curve ---
-            ctx.beginPath();
-            ctx.strokeStyle = '#DAA520'; /* Gold for deflection curve */
-            ctx.lineWidth = 3;
-            ctx.setLineDash([5, 5]); // Dashed line for deflection
-
-            // Determine max deflection for scaling
-            let maxAbsDeflection = 0;
-            // Iterate through a finer resolution for better curve plotting
-            for (let i = 0; i <= 100; i++) {
-                const x_normalized_canvas = i / 100; // x from 0 (left) to 1 (right) on canvas
-                // 'x_actual_from_free_end' directly corresponds to x_normalized_canvas * currentL
-                const x_actual_from_free_end = x_normalized_canvas * currentL;
-                const deflection = getDeflectionValue(x_actual_from_free_end, currentL, currentP, currentE, currentI);
-                if (Math.abs(deflection) > maxAbsDeflection) {
-                    maxAbsDeflection = Math.abs(deflection);
-                }
-            }
-
-            // A heuristic scale factor for visualization. Adjust as needed.
-            const deflectionScale = (maxAbsDeflection > 0) ? (canvas.height * 0.4) / maxAbsDeflection : 0;
-            
-            // Draw the curve
-            // Start at the free end (left side of canvas, x=0 for formula)
-            let initial_deflection_at_free_end = getDeflectionValue(0, currentL, currentP, currentE, currentI);
-            ctx.moveTo(beamStartX, beamBaseY - (initial_deflection_at_free_end * deflectionScale)); 
-
-            for (let i = 0; i <= 100; i++) {
-                const x_normalized_canvas = i / 100; // x from 0 (left) to 1 (right) on canvas
-                // 'x_actual_from_free_end' corresponds to x_normalized_canvas * currentL
-                const x_actual_from_free_end = x_normalized_canvas * currentL;
-                const deflection = getDeflectionValue(x_actual_from_free_end, currentL, currentP, currentE, currentI);
-
-                const plotX = beamStartX + x_normalized_canvas * beamLengthPx;
-                // Deflection is likely negative (downwards), so subtract to move plotY down on the canvas.
-                const plotY = beamBaseY - (deflection * deflectionScale); 
-
-                ctx.lineTo(plotX, plotY);
-            }
-            ctx.stroke();
-            ctx.setLineDash([]); // Reset line dash
-
-            // Display current beam parameters on the canvas for clarity
-            ctx.fillStyle = '#4A2A38'; /* Darker text for parameters */
-            ctx.font = '12px Inter';
-            ctx.fillText(`L: ${currentL.toFixed(2)} m`, 10, 20);
-            ctx.fillText(`P: ${currentP.toExponential(2)} N`, 10, 40);
-            ctx.fillText(`E: ${currentE.toExponential(2)} Pa`, 10, 60);
-            ctx.fillText(`I: ${currentI.toExponential(2)} m⁴`, 10, 80);
-        }
-
-        // Mouse move event for interactive deflection display
-        canvas.addEventListener('mousemove', function(event) {
-            if (currentL === 0 || currentP === 0 || currentE === 0 || currentI === 0) {
-                deflectionDisplay.classList.add('hidden');
-                return;
-            }
-
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = event.clientX - rect.left; // X position relative to the canvas
-            
-            const beamLengthPx = canvas.width * 0.8;
-            const beamStartX = (canvas.width - beamLengthPx) / 2;
-
-            // Map mouseX (canvas coordinate from left) to 'x' measured from the free end (0 to L)
-            let x_actual_from_free_end_mapped = (mouseX - beamStartX) / beamLengthPx * currentL;
-            
-            // Clamp x_actual_from_free_end_mapped to be within [0, L]
-            x_actual_from_free_end_mapped = Math.max(0, Math.min(currentL, x_actual_from_free_end_mapped));
-
-            // Calculate deflection using 'x' from free end for the formula
-            const deflection = getDeflectionValue(x_actual_from_free_end_mapped, currentL, currentP, currentE, currentI);
-
-            deflectionDisplay.classList.remove('hidden');
-            deflectionDisplay.textContent = `Deformação em x = ${x_actual_from_free_end_mapped.toFixed(2)} m (da extremidade livre): ${deflection.toExponential(4)} m`;
-
-            // Redraw with highlight dot
-            drawBeamAndDeflection();
-
-            // Determine max deflection for scaling the dot position
-            let maxAbsDeflectionForDot = 0;
-            for (let i = 0; i <= 100; i++) {
-                const x_normalized = i / 100;
-                const x_actual = x_normalized * currentL; // x from free end for formula
-                const d = getDeflectionValue(x_actual, currentL, currentP, currentE, currentI);
-                if (Math.abs(d) > maxAbsDeflectionForDot) {
-                    maxAbsDeflectionForDot = Math.abs(d);
-                }
-            }
-            const deflectionScaleForDot = (maxAbsDeflectionForDot > 0) ? (canvas.height * 0.4) / maxAbsDeflectionForDot : 0;
-
-            ctx.beginPath();
-            // Plot the dot at the correct deflected position on the canvas
-            const dotPlotY = beamBaseY - (deflection * deflectionScaleForDot);
-            ctx.arc(mouseX, dotPlotY, 5, 0, Math.PI * 2);
-            ctx.fillStyle = '#DAA520'; // Gold dot
-            ctx.fill();
-        });
-
-        canvas.addEventListener('mouseout', function() {
-            deflectionDisplay.classList.add('hidden');
-            // Redraw to remove the highlight dot
-            drawBeamAndDeflection();
-        });
-
-        // Initial call to set up the section input display and initial calculation
-        window.onload = function() {
-            // Set initial canvas dimensions to ensure it's drawn correctly on first load
-            canvas.width = canvas.offsetWidth;
-            canvas.height = 300;
-            toggleSectionInputs(); // Set up initial visibility
-            calculateDeflectionAndDraw(); // Calculate and draw with default values
-        };
-    </script>
+// ---------- saída ----------
+let lastRun={st:null,res:null};
+function kpi(k,v,s){return `<div class="kpi"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`;}
+function update(){
+  const {st,errs}=readState();
+  const p=isFinite(st.L)?(()=>{try{return sectionProps(st.sec);}catch(e){return null;}})():null;
+  const deg=hyperDegree(st);
+  $('structInfo').innerHTML=`<span class="tag">${structName(st.left,st.right)}</span> ${deg<0?'— hipostática':deg===0?'— isostática':'— hiperestática de grau '+deg}`;
+  if(p&&isFinite(p.I))$('secInfo').innerHTML=`I = ${fmt(p.I*1e8,4)} cm⁴ · A = ${fmt(p.A*1e4,4)} cm² · c<sub>sup</sub> = ${fmt(p.cTop*100,3)} cm · c<sub>inf</sub> = ${fmt(p.cBot*100,3)} cm`;
+  if(errs.length){$('status').innerHTML=`<div class="alert bad"><b>Corrija os dados de entrada</b>${errs.join('<br>')}</div>`;clearOut();return;}
+  const res=solve(st);
+  if(res.error){$('status').innerHTML=`<div class="alert bad"><b>Não é possível calcular</b>${res.error}</div>`;drawBeam(st,null);clearOut(true);return;}
+  lastRun={st,res};
+  const m=MAT[st.material],sCrit=m.crit==='tension'?res.sT:res.smax,overS=sCrit>st.f;
+  const lspan=(st.left==='livre'||st.right==='livre')?2*st.L:st.L,dlim=lspan/st.n,overD=res.dmax>dlim;
+  let html='';
+  if(overS)html+=`<div class="alert bad"><b>Resistência excedida</b>${m.msg}</div>`;
+  if(overD)html+=`<div class="alert warn"><b>Flecha acima do limite ℓ/${fmt(st.n,4)}</b>δmáx = ${fmt(res.dmax*1e3,4)} mm &gt; ${fmt(dlim*1e3,4)} mm.</div>`;
+  if(!overS&&!overD)html+=`<div class="alert ok"><b>Dentro dos limites informados</b>Tensão abaixo da resistência de referência e flecha abaixo de ℓ/${fmt(st.n,4)}.</div>`;
+  $('status').innerHTML=html;
+  drawBeam(st,res);
+  const R=Math.max(res.F,1);
+  let k='';
+  k+=kpi('Flecha máxima δmáx',fmt(res.dmax*1e3,4)+' mm',`em x = ${fmt(res.xd,3)} m · limite ${fmt(dlim*1e3,3)} mm`);
+  k+=kpi('Momento máximo |M|máx',fmt(res.Mabs/1e3,4)+' kN·m',`em x = ${fmt(res.xM,3)} m`);
+  k+=kpi('Cortante máximo |V|máx',fmt(res.Vabs/1e3,4)+' kN','');
+  k+=kpi('Tensão normal máx. (tração)',fmt(res.sT/1e6,4)+' MPa',m.crit==='tension'?`f_ct = ${fmt(st.f/1e6,3)} MPa`:'');
+  k+=kpi('Tensão normal máx. (compressão)',fmt(res.sC/1e6,4)+' MPa',m.crit!=='tension'?`referência ${fmt(st.f/1e6,3)} MPa`:'');
+  k+=kpi('Energia de deformação U',fmt(res.U,4)+' J','U = ∫ M² / (2EI) dx');
+  if(st.left!=='livre')k+=kpi('Reação esquerda',fmt(clean(res.RA,R)/1e3,4)+' kN',st.left==='engaste'?`momento no engaste M(0) = ${fmt(clean(res.MA,R)/1e3,4)} kN·m`:'');
+  if(st.right!=='livre')k+=kpi('Reação direita',fmt(clean(res.RB,R)/1e3,4)+' kN',st.right==='engaste'?`momento no engaste M(L) = ${fmt(clean(res.MB,R)/1e3,4)} kN·m`:'');
+  $('kpis').innerHTML=k;
+  plot('plotV',res.X,res.V,{color:'#6b4fa8',unit:'kN',scale:1e-3,L:st.L});
+  plot('plotM',res.X,res.M,{color:'#b85a24',unit:'kN·m',scale:1e-3,L:st.L,invert:true});
+  plot('plotD',res.X,res.v,{color:'#2f5d8a',unit:'mm',scale:1e3,L:st.L});
+  memo(st,res,dlim,lspan);tabBox(st,res);manual();
+}
+function clearOut(keepBeam){$('kpis').innerHTML='';['plotV','plotM','plotD','memo','tab','manOut'].forEach(i=>$(i).innerHTML='');if(!keepBeam)$('beamSvg').innerHTML='';lastRun={st:null,res:null};}
+function memo(st,res,dlim,lspan){
+  const p=res.p,t=st.sec.type,EI=res.EI;let I='';
+  if(t==='rect')I=`I = b·h³/12 = ${fx(st.sec.b)}·${fx(st.sec.h)}³/12 = ${fmt(p.I*1e8,5)} cm⁴`;
+  if(t==='circ')I=`I = π·D⁴/64 = π·${fx(st.sec.D)}⁴/64 = ${fmt(p.I*1e8,5)} cm⁴`;
+  if(t==='tri')I=`I = b·h³/36 = ${fx(st.sec.b)}·${fx(st.sec.h)}³/36 = ${fmt(p.I*1e8,5)} cm⁴  (eixo pelo centroide, a h/3 da base)`;
+  if(t==='custom')I=`I = ${fmt(p.I*1e8,5)} cm⁴ (informado)`;
+  const deg=res.deg,R=Math.max(res.F,1);
+  let h='<ol>';
+  h+=`<li><b>Propriedades da seção</b><br><span class="eq">${I}</span><br><span class="eq">A = ${fmt(p.A*1e4,4)} cm²; c_sup = ${fmt(p.cTop*100,3)} cm; c_inf = ${fmt(p.cBot*100,3)} cm</span></li>`;
+  h+=`<li><b>Rigidez à flexão</b><br><span class="eq">EI = ${fmt(st.E/1e9,4)} GPa × ${fmt(p.I,4)} m⁴ = ${fmt(EI/1e3,5)} kN·m²</span></li>`;
+  if(st.selfWeight)h+=`<li><b>Peso próprio</b><br><span class="eq">q_pp = γ·A = ${fmt(st.gamma/1e3,4)} kN/m³ × ${fmt(p.A,4)} m² = ${fmt(st.gamma*p.A/1e3,4)} kN/m</span></li>`;
+  h+=`<li><b>Classificação</b>: ${structName(st.left,st.right).toLowerCase()}, ${deg===0?'isostática — reações pelas equações de equilíbrio':'hiperestática de grau '+deg+' — reações exigem compatibilidade de deslocamentos'}.<br>Método: integração de <span class="eq">EI·v″(x) = M(x)</span>, com <span class="eq">M(x) = M(0) + V(0)·x + M_cargas(x)</span>. As incógnitas M(0), V(0), v(0) e θ(0) vêm das condições de contorno: ${bcText(st.left,'x = 0')}; ${bcText(st.right,'x = L')}.</li>`;
+  h+=`<li><b>Reações</b><br><span class="eq">R_esq = ${fmt(clean(res.RA,R)/1e3,5)} kN${st.left==='engaste'?'; M(0) = '+fmt(clean(res.MA,R)/1e3,5)+' kN·m':''}</span><br><span class="eq">R_dir = ${fmt(clean(res.RB,R)/1e3,5)} kN${st.right==='engaste'?'; M(L) = '+fmt(clean(res.MB,R)/1e3,5)+' kN·m':''}</span><br>Verificação de equilíbrio: <span class="eq">R_esq + R_dir − carga total = ${fmt(res.RA/1e3,5)} + ${fmt(res.RB/1e3,5)} − ${fmt(res.F/1e3,5)} = ${fmt(clean(res.resid,R)/1e3,3)} kN</span> ${Math.abs(res.resid)<1e-6*R?'<span class="st-ok">✔</span>':'<span class="st-bad">✘</span>'}</li>`;
+  h+=`<li><b>Esforços máximos</b><br><span class="eq">|M|máx = ${fmt(res.Mabs/1e3,5)} kN·m em x = ${fmt(res.xM,4)} m</span> (M⁺ = ${fmt(res.Mpos/1e3,4)}; M⁻ = ${fmt(clean(res.Mneg,R)/1e3,4)} kN·m)<br><span class="eq">|V|máx = ${fmt(res.Vabs/1e3,5)} kN</span></li>`;
+  h+=`<li><b>Tensões normais</b> (σ = M·c/I)<br><span class="eq">σ_tração = ${fmt(res.sT/1e6,5)} MPa; σ_compressão = ${fmt(res.sC/1e6,5)} MPa</span><br>${t==='tri'?'Na seção triangular c_sup ≠ c_inf: tração e compressão diferem. ':''}Critério (${MAT[st.material].crit==='tension'?'tração':'maior tensão'}) contra ${fmt(st.f/1e6,4)} MPa.</li>`;
+  h+=`<li><b>Flecha</b><br><span class="eq">δmáx = ${fmt(res.dmax*1e3,5)} mm em x = ${fmt(res.xd,4)} m</span><br><span class="eq">δlim = ℓ/n = ${fmt(lspan,4)}/${fmt(st.n,4)} = ${fmt(dlim*1e3,4)} mm</span>; rotações θ(0) = ${fmt(res.thA,4)} rad, θ(L) = ${fmt(res.thB,4)} rad</li>`;
+  h+=`<li><b>Energia de deformação</b><br><span class="eq">U = ∫₀ᴸ M²/(2EI) dx = ${fmt(res.U,5)} J</span></li></ol>`;
+  $('memo').innerHTML=h;
+}
+function bcText(t,x){return t==='apoio'?`apoio em ${x} → v = 0 e M = 0`:t==='engaste'?`engaste em ${x} → v = 0 e θ = 0`:`extremidade livre em ${x} → M = 0 e V = 0`;}
+function tabBox(st,res){
+  const t=compareTab(st,res);
+  if(!t){$('tab').innerHTML=`<p style="margin:0">Este caso não corresponde a uma fórmula tabelada simples (há mais de uma carga, peso próprio ou uma configuração fora das tabelas). Para conferir, use os testes de sanidade do <b>Modo verificação</b>, o Ftool ou a superposição de casos tabelados.</p>`;return;}
+  const unit=k=>k==='delta'?[1e3,'mm']:k==='U'?[1,'J']:k==='Mmax'?[1e-3,'kN·m']:[1e-3,'kN'];
+  let h=`<p style="margin:0 0 8px"><span class="tag">${t.nome}${t.mirrored?' (configuração espelhada)':''}</span></p><div class="scroll"><table><tr><th>Grandeza</th><th>Fórmula tabelada</th><th>Tabela</th><th>App (integração)</th><th>Erro</th><th></th></tr>`;
+  for(const r of t.rows){const [s,u]=unit(r.k);h+=`<tr><td>${r.label}</td><td>${r.f}</td><td class="num">${fmt(r.exp*s,5)} ${u}</td><td class="num">${fmt(r.app*s,5)} ${u}</td><td class="num">${pct(r.err)}</td><td class="${r.err<=TOL?'st-ok':'st-bad'}">${r.err<=TOL?'✔':'✘'}</td></tr>`;}
+  $('tab').innerHTML=h+'</table></div>';
+}
+function manual(){
+  const r=lastRun.res;if(!r){$('manOut').innerHTML='';return;}
+  const rows=[['Flecha máxima',num($('man_d').value),r.dmax*1e3,'mm'],['|M|máx',num($('man_M').value),r.Mabs/1e3,'kN·m'],['σmáx',num($('man_s').value),r.smax/1e6,'MPa']].filter(x=>isFinite(x[1]));
+  if(!rows.length){$('manOut').innerHTML='<div class="hint">Preencha ao menos um valor.</div>';return;}
+  let h='<table><tr><th>Grandeza</th><th>Seu cálculo</th><th>App</th><th>Erro</th><th></th></tr>';
+  for(const [n,m,a,u] of rows){const e=Math.abs(a-m)/Math.abs(a||1);h+=`<tr><td>${n}</td><td class="num">${fmt(m,5)} ${u}</td><td class="num">${fmt(a,5)} ${u}</td><td class="num">${pct(e)}</td><td class="${e<=0.01?'st-ok':'st-bad'}">${e<=0.01?'✔':'confira'}</td></tr>`;}
+  $('manOut').innerHTML=h+'</table><div class="hint">Tolerância de 1% para cálculo manual (arredondamentos intermediários).</div>';
+}
+function exportCSV(){
+  const {st,res}=lastRun;if(!res)return;
+  const q=v=>String(v).replace(/;/g,',');const n=v=>isFinite(v)?String(+v.toPrecision(6)).replace('.',','):'';
+  const L=[];L.push('Ficha de verificação — Calculadora de Vigas V02');L.push('Data;'+new Date().toLocaleString('pt-BR'));L.push('');
+  L.push('Dados de entrada');L.push(`Estrutura;${structName(st.left,st.right)}`);L.push(`L [m];${n(st.L)}`);L.push(`Material;${st.material}`);L.push(`E [GPa];${n(st.E/1e9)}`);
+  L.push(`I [cm4];${n(res.p.I*1e8)}`);L.push(`Peso próprio;${st.selfWeight?'sim':'não'}`);
+  st.loads.forEach((l,i)=>L.push(`Carga ${i+1};`+(l.type==='P'?`P = ${n(l.P/1e3)} kN em a = ${n(l.a)} m`:l.type==='M'?`M0 = ${n(l.M/1e3)} kN.m em a = ${n(l.a)} m`:`q = ${n(l.q1/1e3)} a ${n(l.q2/1e3)} kN/m de ${n(l.a)} a ${n(l.b)} m`)));
+  L.push('');L.push('Grandeza;App;Seu cálculo;Erro relativo');
+  const md=num($('man_d').value),mM=num($('man_M').value),ms=num($('man_s').value),er=(a,m)=>isFinite(m)?n(Math.abs(a-m)/Math.abs(a)):'';
+  L.push(`Flecha máx [mm];${n(res.dmax*1e3)};${n(md)};${er(res.dmax*1e3,md)}`);
+  L.push(`|M|máx [kN.m];${n(res.Mabs/1e3)};${n(mM)};${er(res.Mabs/1e3,mM)}`);
+  L.push(`Sigma máx [MPa];${n(res.smax/1e6)};${n(ms)};${er(res.smax/1e6,ms)}`);
+  L.push(`Energia U [J];${n(res.U)};;`);
+  const t=compareTab(st,res);if(t){L.push('');L.push('Fórmula tabelada;'+q(t.nome));L.push('Grandeza;Fórmula;Tabela;App;Erro relativo');t.rows.forEach(r=>L.push(`${q(r.label)};${q(r.f)};${n(r.exp)};${n(r.app)};${n(r.err)}`));}
+  const blob=new Blob(['﻿'+L.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ficha_verificacao_viga.csv';document.body.appendChild(a);a.click();a.remove();
+}
+// ---------- modo verificação ----------
+let benchStates=[];
+function runVerification(){
+  const S=runSanity(),B=runBench();benchStates=[];
+  let h='<tr><th>Teste</th><th>Esperado</th><th>App</th><th>Erro</th><th></th><th></th></tr>';
+  S.forEach(t=>{const i=benchStates.push(t.st)-1;
+    const ev=t.fmtRatio?'razão '+fmt(t.exp,4):fmt(t.exp,5)+' '+(t.unitTxt||''),gv=t.fmtRatio?'razão '+fmt(t.got,4):fmt(t.got,4)+' '+(t.unitTxt||'');
+    h+=`<tr><td>${t.nome}</td><td class="num">${ev}</td><td class="num">${gv}</td><td class="num">${pct(t.err)}</td><td class="${t.ok?'st-ok':'st-bad'}">${t.ok?'✔':'✘'}</td><td><button class="btn small" data-open="${i}">Abrir</button></td></tr>`;});
+  $('tblSanity').innerHTML=h;
+  const unit=k=>k==='delta'?[1e3,'mm']:k==='U'?[1,'J']:k==='Mmax'?[1e-3,'kN·m']:[1e-3,'kN'];
+  h='<tr><th>Caso</th><th>Grandeza</th><th>Fórmula</th><th>Tabela</th><th>App</th><th>Erro</th><th></th><th></th></tr>';let prev='';
+  B.forEach(r=>{const i=benchStates.push(r.st)-1,[s,u]=unit(r.unit),first=r.nome!==prev;prev=r.nome;
+    h+=`<tr><td>${first?'<b>'+r.nome+'</b>':''}</td><td>${r.label}</td><td>${r.f}</td><td class="num">${fmt(r.exp*s,5)} ${u}</td><td class="num">${fmt(r.app*s,5)} ${u}</td><td class="num">${pct(r.err)}</td><td class="${r.ok?'st-ok':'st-bad'}">${r.ok?'✔':'✘'}</td><td>${first?`<button class="btn small" data-open="${i}">Abrir</button>`:''}</td></tr>`;});
+  $('tblBench').innerHTML=h;
+  const tot=S.length+B.length,ok=S.filter(t=>t.ok).length+B.filter(t=>t.ok).length;
+  $('verifSummary').innerHTML=`<span class="summary-pill" style="background:${ok===tot?'var(--ok-soft)':'var(--bad-soft)'};color:${ok===tot?'var(--ok)':'var(--bad)'}">${ok} de ${tot} verificações aprovadas</span>`;
+}
+// ---------- presets ----------
+const PRESETS={
+  tutorial:()=>baseState({L:2,loads:[{type:'P',P:50e3,a:1}]}),
+  tri:()=>baseState({loads:[{type:'q',q1:0,q2:10e3,a:0,b:4}]}),
+  cant:()=>baseState({L:2,left:'engaste',right:'livre',loads:[{type:'P',P:5e3,a:2}]}),
+  propped:()=>baseState({left:'engaste',right:'apoio',loads:[{type:'q',q1:10e3,q2:10e3,a:0,b:4}]}),
+  fixed:()=>baseState({left:'engaste',right:'engaste',loads:[{type:'P',P:20e3,a:2}]}),
+  combo:()=>baseState({L:5,material:'madeira',E:12e9,f:40e6,gamma:6e3,sec:{type:'rect',b:15,h:30},selfWeight:true,loads:[{type:'P',P:8e3,a:1.5},{type:'q',q1:2e3,q2:6e3,a:2,b:5}]}),
+};
+// ---------- eventos ----------
+document.addEventListener('input',e=>{
+  const el=e.target;
+  if(el.dataset&&el.dataset.k&&el.dataset.k!=='type'){uiLoads[+el.dataset.i][el.dataset.k]=el.value;update();return;}
+  if(['man_d','man_M','man_s'].includes(el.id)){manual();return;}
+  if(el.closest&&el.closest('aside')&&el.tagName==='INPUT')update();
+});
+document.addEventListener('change',e=>{
+  const el=e.target;
+  if(el.dataset&&el.dataset.k==='type'){uiLoads[+el.dataset.i]=defaultLoad(el.value);renderLoads();update();return;}
+  if(el.id==='material'){applyMaterial();update();return;}
+  if(el.id==='secType'){showSec();update();return;}
+  if(el.id==='preset'&&el.value){setState(PRESETS[el.value]());el.value='';return;}
+  if(['left','right','selfWeight'].includes(el.id))update();
+});
+document.addEventListener('click',e=>{
+  const el=e.target;
+  if(el.dataset&&el.dataset.rm!==undefined){uiLoads.splice(+el.dataset.rm,1);renderLoads();update();}
+  if(el.dataset&&el.dataset.open!==undefined){setState(JSON.parse(JSON.stringify(benchStates[+el.dataset.open])));window.scrollTo({top:$('status').getBoundingClientRect().top+window.scrollY-10,behavior:'smooth'});}
+});
+$('addLoad').onclick=()=>{uiLoads.push(defaultLoad('P'));renderLoads();update();};
+$('btnCsv').onclick=exportCSV;
+$('btnVerif').onclick=()=>{const v=$('verif');v.classList.toggle('open');if(v.classList.contains('open')){runVerification();v.scrollIntoView({behavior:'smooth'});}};
+// início
+setState(PRESETS.tutorial());
+</script>
 </body>
 </html>
