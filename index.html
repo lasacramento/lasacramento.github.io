@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Calculadora de Vigas V02</title>
+<title>Calculadora de Vigas V03</title>
 <style>
 :root{
   --bg:#f5f6f8; --card:#ffffff; --ink:#1c232b; --muted:#5b6672; --line:#dce1e7; --soft:#eef1f4;
@@ -71,13 +71,24 @@ details summary{cursor:pointer;font-weight:600}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:6px}
 .legend i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:5px}
 .scroll{overflow-x:auto}
+.duo{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:14px;margin-bottom:14px}
+.duo>.card{margin-bottom:0}
+@media (max-width:1180px){.duo{grid-template-columns:1fr}}
+.plotwrap svg{touch-action:pan-y;cursor:crosshair}
+.cur line{stroke:#1c232b;stroke-width:1;stroke-dasharray:3 3}
+.cur rect{fill:#fff;stroke:#c3cad2;stroke-width:1}
+.cur text{font-weight:600}
+.secnote{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5}
+.secnote b{color:var(--ink)}
+.tr{color:#b3261e;font-weight:650}.cp{color:#1f5fa8;font-weight:650}
+.legend i.sq{height:10px;width:14px}
 </style>
 </head>
 <body>
 <header>
   <div>
     <h1>Calculadora de Vigas — deflexão, esforços e tensões</h1>
-    <div class="ver">Versão V02 · 20/10/2026 · regime elástico linear (Euler-Bernoulli)</div>
+    <div class="ver">Versão V03 · 24/10/2026 · regime elástico linear (Euler-Bernoulli)</div>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <select id="preset" class="btn" style="width:auto">
@@ -128,18 +139,22 @@ details summary{cursor:pointer;font-weight:600}
     <h2>3 · Seção transversal</h2>
     <select id="secType">
       <option value="rect">Retangular</option><option value="circ">Circular maciça</option>
+      <option value="tube">Circular vazada (tubo)</option><option value="I">Perfil I (duplo T)</option>
       <option value="tri">Triangular (vértice para cima)</option><option value="custom">Personalizada (informar I)</option>
     </select>
     <div id="sec_rect" class="row2"><div><label>Base b [cm]</label><input type="text" id="rect_b" value="10"></div><div><label>Altura h [cm]</label><input type="text" id="rect_h" value="20"></div></div>
     <div id="sec_circ"><label>Diâmetro D [cm]</label><input type="text" id="circ_D" value="20"></div>
+    <div id="sec_tube"><div class="row2"><div><label>Diâmetro externo D [cm]</label><input type="text" id="tube_D" value="11,43"></div><div><label>Espessura da parede t [cm]</label><input type="text" id="tube_t" value="0,602"></div></div><div class="hint">Ex.: tubo 4" Sch 40 → D = 11,43 cm; t = 0,602 cm.</div></div>
+    <div id="sec_I"><div class="row2"><div><label>Altura total d [cm]</label><input type="text" id="I_d" value="45,5"></div><div><label>Largura da mesa b<sub>f</sub> [cm]</label><input type="text" id="I_bf" value="15,3"></div><div><label>Espessura da alma t<sub>w</sub> [cm]</label><input type="text" id="I_tw" value="0,8"></div><div><label>Espessura da mesa t<sub>f</sub> [cm]</label><input type="text" id="I_tf" value="1,33"></div></div><div class="hint">Cálculo sem os raios de concordância alma-mesa: I fica alguns % abaixo do catálogo. Para usar o valor exato do catálogo, escolha "Personalizada".</div></div>
     <div id="sec_tri" class="row2"><div><label>Base b [cm]</label><input type="text" id="tri_b" value="15"></div><div><label>Altura h [cm]</label><input type="text" id="tri_h" value="20"></div></div>
     <div id="sec_custom" class="row3"><div><label>I [cm⁴]</label><input type="text" id="cus_I" value="6667"></div><div><label>c<sub>máx</sub> [cm]</label><input type="text" id="cus_c" value="10"></div><div><label>A [cm²]</label><input type="text" id="cus_A" value="200"></div></div>
+    <div class="hint">Decimais com vírgula; sem separador de milhar. Confira abaixo os valores que o app entendeu.</div>
     <div class="hint" id="secInfo"></div>
   </div>
 
   <div class="card">
     <h2>4 · Cargas</h2>
-    <div class="hint" style="margin:0 0 8px">Valores positivos = para baixo; momento positivo = sentido horário. Posições medidas a partir da extremidade esquerda.</div>
+    <div class="hint" style="margin:0 0 8px">Decimais com vírgula. Não use separador de milhar (escreva 25652, e não 25.652). Valores positivos = para baixo; momento positivo = sentido horário. Posições medidas a partir da extremidade esquerda.</div>
     <div id="loads"></div>
     <button class="btn small" id="addLoad">+ Adicionar carga</button>
     <label class="check"><input type="checkbox" id="selfWeight"> <span>Incluir peso próprio (γ·A)</span></label>
@@ -169,10 +184,19 @@ details summary{cursor:pointer;font-weight:600}
 
   <div id="status"></div>
 
+  <div class="duo">
   <div class="card">
     <h2>Esquema e deformada</h2>
     <div id="beamSvg"></div>
     <div class="legend"><span><i style="background:var(--cD)"></i>deformada (escala exagerada)</span><span><i style="background:#3d4752"></i>viga indeformada</span></div>
+  </div>
+  <div class="card">
+    <h2>Seção transversal e tensões</h2>
+    <div id="secSvg"></div>
+    <div class="legend"><span><i class="sq" style="background:#e4605a"></i>tração</span><span><i class="sq" style="background:#5b8fd6"></i>compressão</span><span><i style="background:#1c232b;height:1px"></i>LN = linha neutra</span></div>
+    <div class="secnote" id="secNote"></div>
+    <button class="btn small" id="btnSecMax" style="margin-top:8px">Voltar à seção de |M|máx</button>
+  </div>
   </div>
 
   <div class="card">
@@ -182,9 +206,12 @@ details summary{cursor:pointer;font-weight:600}
 
   <div class="card">
     <h2>Diagramas</h2>
-    <h3 style="color:var(--cV)">Esforço cortante V(x) [kN]</h3><div id="plotV"></div>
-    <h3 style="color:var(--cM)">Momento fletor M(x) [kN·m] <span class="hint">— positivo desenhado abaixo do eixo (lado tracionado)</span></h3><div id="plotM"></div>
-    <h3 style="color:var(--cD)">Linha elástica v(x) [mm]</h3><div id="plotD"></div>
+    <div class="hint" style="margin:0 0 4px">Passe o mouse (ou o dedo) sobre qualquer diagrama para ler x e o valor nos três gráficos ao mesmo tempo; a seção transversal acompanha o cursor. Clique para fixar a seção nessa posição.</div>
+    <h3 style="color:var(--cV)">Esforço cortante V(x) [kN]</h3><div id="plotV" class="plotwrap"></div>
+    <h3 style="color:var(--cM)">Momento fletor M(x) [kN·m] <span class="hint">— positivo desenhado abaixo do eixo (lado tracionado)</span></h3><div id="plotM" class="plotwrap"></div>
+    <h3 style="color:var(--cD)">Linha elástica v(x) [mm]</h3><div id="plotD" class="plotwrap"></div>
+    <button class="btn" id="btnDiag" style="margin-top:10px">Exportar diagramas (CSV: x, V, M, θ, v, σ)</button>
+    <div class="hint">O arquivo traz todos os pontos da integração. Use-o para sobrepor várias simulações em uma planilha ou no Python.</div>
   </div>
 
   <div class="card memo">
@@ -234,6 +261,7 @@ details summary{cursor:pointer;font-weight:600}
     <details style="margin-top:8px">
       <summary>Histórico de versões</summary>
       <ul>
+        <li><b>V03 (24/10/2026)</b> — leitura dos diagramas com o cursor (x e valor sincronizados em V, M e v); painel da seção transversal com cotas, linha neutra e zonas tracionada (vermelho) e comprimida (azul), acompanhando o cursor; seções tubo e perfil I; exportação dos diagramas em CSV; alerta de grandes deslocamentos. Revisão após bateria de testes: números sem separador de milhar nos campos e nos resultados (evita ler 25.652 como 25,652) e aviso quando o ponto é digitado como milhar; cargas e momentos aplicados exatamente sobre um apoio passam a ser absorvidos pelo apoio, sem inflar |V|máx, |M|máx e o momento no engaste; rótulos de carga com mais precisão e sem sobreposição.</li>
         <li><b>V02 (20/10/2026)</b> — cálculo por integração da linha elástica (fórmulas tabeladas passam a ser testes); escolha de apoios; múltiplas cargas em posição livre; peso próprio; diagramas V, M e v; deformada real; memória de cálculo; tensões de tração e compressão separadas; critério por material; limite de flecha; modo verificação; ficha do usuário com exportação; aceita vírgula decimal; correção das cargas triangulares.</li>
         <li><b>V01 (05/10/2026)</b> — versão inicial gerada com o Gemini: viga biapoiada, seis casos de carga por fórmula tabelada.</li>
       </ul>
@@ -250,6 +278,8 @@ function sectionProps(s){
   if(s.type==='rect'){const b=s.b*cm,h=s.h*cm;return {I:b*h**3/12,A:b*h,cTop:h/2,cBot:h/2,h};}
   if(s.type==='circ'){const D=s.D*cm;return {I:Math.PI*D**4/64,A:Math.PI*D*D/4,cTop:D/2,cBot:D/2,h:D};}
   if(s.type==='tri'){const b=s.b*cm,h=s.h*cm;return {I:b*h**3/36,A:b*h/2,cTop:2*h/3,cBot:h/3,h};}
+  if(s.type==='tube'){const D=s.D*cm,d=(s.D-2*s.t)*cm;return {I:Math.PI*(D**4-d**4)/64,A:Math.PI*(D*D-d*d)/4,cTop:D/2,cBot:D/2,h:D};}
+  if(s.type==='I'){const d=s.d*cm,bf=s.bf*cm,tw=s.tw*cm,tf=s.tf*cm,hw=d-2*tf;return {I:(bf*d**3-(bf-tw)*hw**3)/12,A:2*bf*tf+hw*tw,cTop:d/2,cBot:d/2,h:d};}
   return {I:s.I*1e-8,A:s.A*1e-4,cTop:s.c*cm,cBot:s.c*cm,h:2*s.c*cm};
 }
 function allLoads(st,p){
@@ -262,9 +292,9 @@ function loadEffect(loads,x,inclusive,eps){
   let V=0,M=0;
   for(const ld of loads){
     if(ld.type==='P'){
-      if(inclusive? x>=ld.a-eps/2 : x>ld.a+eps/2){V-=ld.P;M-=ld.P*(x-ld.a);}
+      if((inclusive||ld.a<=eps/2)? x>=ld.a-eps/2 : x>ld.a+eps/2){V-=ld.P;M-=ld.P*(x-ld.a);}
     }else if(ld.type==='M'){
-      if(inclusive? x>=ld.a-eps/2 : x>ld.a+eps/2){M+=ld.M;}
+      if((inclusive||ld.a<=eps/2)? x>=ld.a-eps/2 : x>ld.a+eps/2){M+=ld.M;}
     }else if(x>ld.a){
       const u=Math.min(x,ld.b)-ld.a,d=x-ld.a,k=(ld.q2-ld.q1)/(ld.b-ld.a);
       V-=ld.q1*u+k*u*u/2;
@@ -324,8 +354,8 @@ function solve(st){
     th[i]=thl[i]+t0+(MA*x+VA*x*x/2)/EI;
     v[i]=vl[i]+v0+t0*x+(MA*x*x/2+VA*x**3/6)/EI;}
   const F=-end.V;
-  const RA=st.left!=='livre'?VA:0, MAr=st.left==='engaste'?MA:0;
-  const RB=st.right!=='livre'?-(end.V+VA):0, MBr=st.right==='engaste'?end.M+MA+VA*L:0;
+  const RA=st.left!=='livre'?VA:0, MAr=st.left==='engaste'?Ml[0]+MA:0;
+  const RB=st.right!=='livre'?-(end.V+VA):0, MBr=st.right==='engaste'?Ml[n-1]+MA+VA*L:0;
   let U=0;for(let i=1;i<n;i++)U+=(M[i]*M[i]+M[i-1]*M[i-1])/2*(X[i]-X[i-1]);U/=2*EI;
   const argmax=a=>{let k=0;for(let i=1;i<a.length;i++)if(Math.abs(a[i])>Math.abs(a[k]))k=i;return k;};
   const iD=argmax(v),iM=argmax(M),iV=argmax(V);
@@ -466,12 +496,12 @@ const MAT={
        msg:'σmáx supera a resistência de referência informada.'}
 };
 let uiLoads=[];
-const num=s=>{s=String(s).trim().replace(',','.');return s===''?NaN:Number(s);};
+const num=s=>{s=String(s).trim().replace(/\s+/g,'');if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'');s=s.replace(',','.');return s===''?NaN:Number(s);};
 const SUP='⁰¹²³⁴⁵⁶⁷⁸⁹';
 function fmt(x,s=4){if(x===undefined||!isFinite(x))return '—';if(x===0)return '0';const ax=Math.abs(x);
-  if(ax<1e-3||ax>=1e6){const e=Math.floor(Math.log10(ax));const m=x/10**e;return m.toLocaleString('pt-BR',{maximumSignificantDigits:s})+'×10'+(e<0?'⁻':'')+String(Math.abs(e)).split('').map(c=>SUP[c]).join('');}
-  return x.toLocaleString('pt-BR',{maximumSignificantDigits:s});}
-const fx=x=>x.toLocaleString('pt-BR',{maximumFractionDigits:3});
+  if(ax<1e-3||ax>=1e6){const e=Math.floor(Math.log10(ax));const m=x/10**e;return m.toLocaleString('pt-BR',{maximumSignificantDigits:s,useGrouping:false})+'×10'+(e<0?'⁻':'')+String(Math.abs(e)).split('').map(c=>SUP[c]).join('');}
+  return x.toLocaleString('pt-BR',{maximumSignificantDigits:s,useGrouping:false});}
+const fx=x=>x.toLocaleString('pt-BR',{maximumFractionDigits:6,useGrouping:false});
 const clean=(x,ref)=>Math.abs(x)<1e-9*Math.max(ref,1)?0:x;
 const pct=e=>!isFinite(e)?'—':e===0?'0 %':e<1e-6?'< 0,0001 %':(e*100).toLocaleString('pt-BR',{maximumSignificantDigits:2})+' %';
 
@@ -501,6 +531,9 @@ function readState(){
   if(t==='rect'){st.sec.b=g('rect_b','Base b');st.sec.h=g('rect_h','Altura h');}
   else if(t==='circ'){st.sec.D=g('circ_D','Diâmetro D');}
   else if(t==='tri'){st.sec.b=g('tri_b','Base b');st.sec.h=g('tri_h','Altura h');}
+  else if(t==='tube'){st.sec.D=g('tube_D','Diâmetro D');st.sec.t=g('tube_t','Espessura t');if(st.sec.t>=st.sec.D/2)errs.push('Tubo: a espessura t deve ser menor que D/2.');}
+  else if(t==='I'){st.sec.d=g('I_d','Altura d');st.sec.bf=g('I_bf','Largura da mesa bf');st.sec.tw=g('I_tw','Espessura da alma tw');st.sec.tf=g('I_tf','Espessura da mesa tf');
+    if(2*st.sec.tf>=st.sec.d)errs.push('Perfil I: 2·tf deve ser menor que d.');if(st.sec.tw>st.sec.bf)errs.push('Perfil I: tw não pode ser maior que bf.');}
   else{st.sec.I=g('cus_I','Inércia I');st.sec.c=g('cus_c','c máx');st.sec.A=g('cus_A','Área A');}
   uiLoads.forEach((ld,i)=>{const n=i+1,inL=(x,lab)=>{if(!isFinite(x))errs.push(`Carga ${n}: ${lab} inválido.`);else if(isFinite(L)&&(x<0||x>L+1e-12))errs.push(`Carga ${n}: ${lab} deve estar entre 0 e L.`);};
     if(ld.type==='P'){const P=num(ld.P)*1e3,a=num(ld.a);if(!isFinite(P))errs.push(`Carga ${n}: P inválido.`);inL(a,'posição a');st.loads.push({type:'P',P,a});}
@@ -510,7 +543,7 @@ function readState(){
   if(!st.loads.length&&!st.selfWeight)errs.push('Adicione ao menos uma carga ou ative o peso próprio.');
   return {st,errs};
 }
-function showSec(){['rect','circ','tri','custom'].forEach(k=>$('sec_'+k).style.display=$('secType').value===k?'':'none');}
+function showSec(){['rect','circ','tube','I','tri','custom'].forEach(k=>$('sec_'+k).style.display=$('secType').value===k?'':'none');}
 function applyMaterial(){const m=MAT[$('material').value];$('E').value=fx(m.E);$('f').value=fx(m.f);$('gamma').value=fx(m.g);matLabels();}
 function matLabels(){const m=MAT[$('material').value];$('fLabel').textContent=m.fl;$('matHint').textContent=m.hint;}
 
@@ -521,6 +554,8 @@ function setState(st){
   if(st.sec.type==='rect'){$('rect_b').value=fx(st.sec.b);$('rect_h').value=fx(st.sec.h);}
   if(st.sec.type==='circ')$('circ_D').value=fx(st.sec.D);
   if(st.sec.type==='tri'){$('tri_b').value=fx(st.sec.b);$('tri_h').value=fx(st.sec.h);}
+  if(st.sec.type==='tube'){$('tube_D').value=fx(st.sec.D);$('tube_t').value=fx(st.sec.t);}
+  if(st.sec.type==='I'){$('I_d').value=fx(st.sec.d);$('I_bf').value=fx(st.sec.bf);$('I_tw').value=fx(st.sec.tw);$('I_tf').value=fx(st.sec.tf);}
   if(st.sec.type==='custom'){$('cus_I').value=fx(st.sec.I);$('cus_c').value=fx(st.sec.c);$('cus_A').value=fx(st.sec.A);}
   $('selfWeight').checked=!!st.selfWeight;$('nLim').value=fx(st.n||250);
   uiLoads=st.loads.map(l=>l.type==='P'?{type:'P',P:fx(l.P/1e3),a:fx(l.a)}:l.type==='M'?{type:'M',M:fx(l.M/1e3),a:fx(l.a)}:{type:'q',q1:fx(l.q1/1e3),q2:fx(l.q2/1e3),a:fx(l.a),b:fx(l.b)});
@@ -550,7 +585,7 @@ function drawBeam(st,res){
   <marker id="ahs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#9aa4ae"/></marker></defs>`;
   const loads=res&&!res.error?res.loads:allLoads(st,sectionProps(st.sec));
   const qs=loads.filter(l=>l.type==='q').sort((A,B)=>(B.self?1:0)-(A.self?1:0)),qmax=Math.max(1e-12,...qs.map(l=>Math.max(Math.abs(l.q1),Math.abs(l.q2))));
-  let stackTop=y0-8;
+  let stackTop=y0-8,qLabels='';
   qs.forEach((l,j)=>{
     const base=y0-8,hh=q=>l.self?7:6+44*Math.abs(q)/qmax,c=l.self?'#9aa4ae':col,mk=l.self?'ahs':'ah';
     const x1=X(l.a),x2=X(l.b),h1=hh(l.q1),h2=hh(l.q2),off=j*0;
@@ -558,18 +593,19 @@ function drawBeam(st,res){
     const nA=Math.max(2,Math.round((x2-x1)/32));
     for(let i=0;i<=nA;i++){const t=i/nA,xx=x1+t*(x2-x1),q=l.q1+t*(l.q2-l.q1),h=hh(q);if(Math.abs(q)<1e-9)continue;
       s+=q>0?`<line x1="${xx}" y1="${base-h}" x2="${xx}" y2="${base}" stroke="${c}" stroke-width="1.2" marker-end="url(#${mk})"/>`:`<line x1="${xx}" y1="${base}" x2="${xx}" y2="${base-h}" stroke="${c}" stroke-width="1.2" marker-end="url(#${mk})"/>`;}
-    const lab=l.self?`peso próprio ${fmt(l.q1/1e3,3)} kN/m`:(Math.abs(l.q1-l.q2)<1e-9?`${fmt(l.q1/1e3,3)} kN/m`:`${fmt(l.q1/1e3,3)} → ${fmt(l.q2/1e3,3)} kN/m`);
-    if(l.self)s+=`<text x="${ml}" y="${H-8}" class="muted">tracejado cinza: ${lab}</text>`;else s+=`<text x="${(x1+x2)/2}" y="${base-Math.max(h1,h2)-6}" text-anchor="middle">${lab}</text>`;
+    const lab=l.self?`peso próprio ${fmt(l.q1/1e3,4)} kN/m`:(Math.abs(l.q1-l.q2)<1e-9?`${fmt(l.q1/1e3,4)} kN/m`:`${fmt(l.q1/1e3,4)} → ${fmt(l.q2/1e3,4)} kN/m`);
+    if(l.self)s+=`<text x="${ml}" y="${H-8}" class="muted">tracejado cinza: ${lab}</text>`;else qLabels+=`<text x="${(x1+x2)/2}" y="${base-Math.max(h1,h2)-6}" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="5" stroke-linejoin="round">${lab}</text>`;
     stackTop=Math.min(stackTop,base-Math.max(h1,h2)-20);
   });
   s+=`<line x1="${X(0)}" y1="${y0}" x2="${X(L)}" y2="${y0}" class="beam"/>`;
   loads.filter(l=>l.type==='P').forEach(l=>{const x=X(l.a),top=Math.min(stackTop,y0-60)-10;
     s+=l.P>=0?`<line x1="${x}" y1="${top}" x2="${x}" y2="${y0-5}" stroke="${col}" stroke-width="2.2" marker-end="url(#ah)"/>`:`<line x1="${x}" y1="${y0-5}" x2="${x}" y2="${top}" stroke="${col}" stroke-width="2.2" marker-end="url(#ah)"/>`;
-    s+=`<text x="${x}" y="${top-6}" text-anchor="middle" font-weight="600">P = ${fmt(l.P/1e3,3)} kN</text>`;});
+    s+=`<text x="${x}" y="${top-6}" text-anchor="middle" font-weight="600" paint-order="stroke" stroke="#fff" stroke-width="5" stroke-linejoin="round">P = ${fmt(l.P/1e3,4)} kN</text>`;});
+  s+=qLabels;
   loads.filter(l=>l.type==='M').forEach(l=>{const cx=X(l.a),r=22,cw=l.M>=0;
     s+=cw?`<path d="M${cx-r},${y0} A${r},${r} 0 0 1 ${cx+r},${y0}" fill="none" stroke="${col}" stroke-width="2" marker-end="url(#ah)"/>`
           :`<path d="M${cx+r},${y0} A${r},${r} 0 0 0 ${cx-r},${y0}" fill="none" stroke="${col}" stroke-width="2" marker-end="url(#ah)"/>`;
-    s+=`<text x="${cx}" y="${y0-r-8}" text-anchor="middle" font-weight="600">M₀ = ${fmt(l.M/1e3,3)} kN·m</text>`;});
+    s+=`<text x="${cx}" y="${y0-r-8}" text-anchor="middle" font-weight="600">M₀ = ${fmt(l.M/1e3,4)} kN·m</text>`;});
   s+=support(st.left,X(0),y0,'L')+support(st.right,X(L),y0,'R');
   if(res&&!res.error&&res.dmax>0){
     const k=48/res.dmax;let pts=[];const step=Math.max(1,Math.floor(res.X.length/600));
@@ -577,7 +613,7 @@ function drawBeam(st,res){
     pts.push(`${X(res.X[res.X.length-1]).toFixed(1)},${(y0-res.v[res.v.length-1]*k).toFixed(1)}`);
     s+=`<polyline points="${pts.join(' ')}" fill="none" stroke="var(--cD)" stroke-width="2.4" stroke-dasharray="7 4"/>`;
     const xd=X(res.xd),yd=y0+res.vsign*-1*48;
-    s+=`<circle cx="${xd}" cy="${yd}" r="4" fill="var(--cD)"/><text x="${xd}" y="${yd+(res.vsign<0?18:-10)}" text-anchor="middle" fill="var(--cD)" style="fill:var(--cD);font-weight:600">δmáx = ${fmt(res.dmax*1e3,4)} mm (x = ${fmt(res.xd,3)} m)</text>`;
+    s+=`<circle cx="${xd}" cy="${yd}" r="4" fill="var(--cD)"/><text x="${xd}" y="${yd+(res.vsign<0?18:-10)}" text-anchor="${xd>W-mr-110?'end':xd<ml+110?'start':'middle'}" fill="var(--cD)" style="fill:var(--cD);font-weight:600">δmáx = ${fmt(res.dmax*1e3,4)} mm (x = ${fmt(res.xd,3)} m)</text>`;
     s+=`<text x="${W-mr}" y="${H-8}" text-anchor="end" class="muted">escala da deformada ≈ ${fmt(k,2)}× (ilustrativa)</text>`;
   }
   const yd2=y0+70;
@@ -602,7 +638,82 @@ function plot(id,X,Y,{color,unit,invert,scale,L}){
     return `<circle cx="${x}" cy="${y}" r="3" fill="${color}"/><text x="${x}" y="${up?y-7:y+15}" text-anchor="${anchor}" style="fill:${color};font-weight:600">${fmt(v,4)} ${unit} (x = ${fmt(X[i],3)} m)</text>`;};
   s+=lab(iMax);if(iMin!==iMax)s+=lab(iMin);
   s+=`<text x="${ml-8}" y="${pz+4}" text-anchor="end" class="muted">x = 0</text><text x="${ml+pw+8}" y="${pz+4}" class="muted">${fmt(L,4)} m</text>`;
+  s+=`<g class="cur" style="display:none"><line x1="0" y1="${mt-6}" x2="0" y2="${mt+ph+4}"/><circle r="4" fill="${color}" stroke="#fff" stroke-width="1.5"/><rect rx="5" height="22"/><text style="fill:${color}"></text></g>`;
+  s+=`<rect class="hov" x="${ml}" y="0" width="${pw}" height="${H}" fill="transparent"/>`;
   $(id).innerHTML=`<svg viewBox="0 0 ${W} ${H}">${s}</svg>`;
+  PLOTS[id]={X,ys,unit,color,px,py,W,ml,pw,mt,ph,L,name:{plotV:'V',plotM:'M',plotD:'v'}[id]};
+  const svg=$(id).querySelector('svg'),hov=svg.querySelector('.hov');
+  const toX=ev=>{const r=svg.getBoundingClientRect();const xs=(ev.clientX-r.left)*W/r.width;return Math.min(L,Math.max(0,(xs-ml)/pw*L));};
+  hov.addEventListener('pointermove',ev=>setCursor(toX(ev)));
+  hov.addEventListener('pointerdown',ev=>setCursor(toX(ev)));
+  hov.addEventListener('pointerleave',()=>hideCursor());
+  hov.addEventListener('click',ev=>{HOV.pinned=toX(ev);drawSection(HOV.pinned,true);});
+}
+// ---------- cursor sincronizado ----------
+const PLOTS={};const HOV={pinned:null};
+function interp(X,Y,x){let lo=0,hi=X.length-1;if(x<=X[0])return Y[0];if(x>=X[hi])return Y[hi];
+  while(hi-lo>1){const m=(lo+hi)>>1;if(X[m]<x)lo=m;else hi=m;}
+  const t=(x-X[lo])/((X[hi]-X[lo])||1);return Y[lo]+t*(Y[hi]-Y[lo]);}
+function setCursor(x){
+  if(!lastRun.res)return;
+  for(const id in PLOTS){const P=PLOTS[id],g=$(id).querySelector('.cur');if(!g)continue;
+    const v=interp(P.X,P.ys,x),cx=P.px(x),cy=P.py(v);g.style.display='';
+    const ln=g.querySelector('line');ln.setAttribute('x1',cx);ln.setAttribute('x2',cx);
+    const c=g.querySelector('circle');c.setAttribute('cx',cx);c.setAttribute('cy',cy);
+    const tx=g.querySelector('text'),rc=g.querySelector('rect');
+    tx.textContent=`x = ${fmt(x,4)} m  ·  ${P.name} = ${fmt(Math.abs(v)<1e-12?0:v,4)} ${P.unit}`;
+    const wTxt=tx.textContent.length*6.6+14,left=cx+wTxt+12>P.ml+P.pw+P.ml*0.9;
+    const bx=left?cx-wTxt-10:cx+10;rc.setAttribute('x',bx);rc.setAttribute('y',4);rc.setAttribute('width',wTxt);
+    tx.setAttribute('x',bx+7);tx.setAttribute('y',19);}
+  drawSection(x,false);
+}
+function hideCursor(){for(const id in PLOTS){const g=$(id).querySelector('.cur');if(g)g.style.display='none';}
+  if(lastRun.res)drawSection(HOV.pinned??lastRun.res.xM,HOV.pinned!=null);}
+// ---------- seção transversal ----------
+function drawSection(x,pinned){
+  const {st,res}=lastRun;if(!res){$('secSvg').innerHTML='';$('secNote').innerHTML='';return;}
+  const p=res.p,sec=st.sec,t=sec.type,M=interp(res.X,res.M,x);
+  const W=440,H=280,box=170,cx=115,cy=140;
+  const hReal=t==='custom'?2*sec.c:(t==='rect'||t==='tri')?sec.h:t==='circ'?sec.D:t==='tube'?sec.D:sec.d;
+  const bReal=t==='custom'?0.6*hReal:(t==='rect'||t==='tri')?sec.b:t==='circ'||t==='tube'?(sec.D):sec.bf;
+  const k=box/Math.max(hReal,bReal),hh=hReal*k,bb=bReal*k,top=cy-hh/2,bot=cy+hh/2,lnY=top+p.cTop*100*k;
+  let shape='',outline='';
+  if(t==='rect'||t==='custom')shape=`<rect x="${cx-bb/2}" y="${top}" width="${bb}" height="${hh}"/>`;
+  if(t==='circ')shape=`<circle cx="${cx}" cy="${cy}" r="${hh/2}"/>`;
+  if(t==='tube'){const R=hh/2,r=(sec.D/2-sec.t)*k;shape=`<path fill-rule="evenodd" clip-rule="evenodd" d="M${cx-R},${cy}a${R},${R} 0 1,0 ${2*R},0a${R},${R} 0 1,0 ${-2*R},0zM${cx-r},${cy}a${r},${r} 0 1,0 ${2*r},0a${r},${r} 0 1,0 ${-2*r},0z"/>`;}
+  if(t==='tri')shape=`<polygon points="${cx},${top} ${cx-bb/2},${bot} ${cx+bb/2},${bot}"/>`;
+  if(t==='I'){const tf=sec.tf*k,tw=sec.tw*k,b2=bb/2,w2=tw/2;
+    shape=`<polygon points="${cx-b2},${top} ${cx+b2},${top} ${cx+b2},${top+tf} ${cx+w2},${top+tf} ${cx+w2},${bot-tf} ${cx+b2},${bot-tf} ${cx+b2},${bot} ${cx-b2},${bot} ${cx-b2},${bot-tf} ${cx-w2},${bot-tf} ${cx-w2},${top+tf} ${cx-b2},${top+tf}"/>`;}
+  const zero=Math.abs(M)<1e-9*Math.max(res.Mabs,1);
+  const cTopCol=zero?'#c9cfd6':M>0?'#5b8fd6':'#e4605a',cBotCol=zero?'#c9cfd6':M>0?'#e4605a':'#5b8fd6';
+  let s=`<defs><clipPath id="secClip">${shape}</clipPath><marker id="dm" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1L9,5L0,9z" fill="#5b6672"/></marker></defs>`;
+  s+=`<g clip-path="url(#secClip)"><rect x="${cx-box}" y="${top-2}" width="${2*box}" height="${lnY-top+2}" fill="${cTopCol}"/><rect x="${cx-box}" y="${lnY}" width="${2*box}" height="${bot-lnY+2}" fill="${cBotCol}"/></g>`;
+  s+=shape.replace(/^<(\w+)/,'<$1 fill="none" stroke="#1c232b" stroke-width="1.6"'+(t==='custom'?' stroke-dasharray="5 3"':''));
+  s+=`<line x1="${cx-bb/2-18}" y1="${lnY}" x2="${cx+bb/2+18}" y2="${lnY}" stroke="#1c232b" stroke-dasharray="6 3"/><text x="${cx+bb/2+20}" y="${lnY+4}" style="font-weight:600">LN</text>`;
+  // cotas
+  const dimV=(x0,y1,y2,lab)=>`<line x1="${x0}" y1="${y1}" x2="${x0}" y2="${y2}" stroke="#5b6672" marker-start="url(#dm)" marker-end="url(#dm)"/><text transform="translate(${x0-6},${(y1+y2)/2}) rotate(-90)" text-anchor="middle" class="muted">${lab}</text>`;
+  const dimH=(x1,x2,y0,lab)=>`<line x1="${x1}" y1="${y0}" x2="${x2}" y2="${y0}" stroke="#5b6672" marker-start="url(#dm)" marker-end="url(#dm)"/><text x="${(x1+x2)/2}" y="${y0+15}" text-anchor="middle" class="muted">${lab}</text>`;
+  const L1=cx-Math.max(bb/2,20)-14;
+  if(t==='rect'){s+=dimV(L1,top,bot,'h = '+fx(sec.h)+' cm')+dimH(cx-bb/2,cx+bb/2,bot+14,'b = '+fx(sec.b)+' cm');}
+  if(t==='tri'){s+=dimV(L1,top,bot,'h = '+fx(sec.h)+' cm')+dimH(cx-bb/2,cx+bb/2,bot+14,'b = '+fx(sec.b)+' cm');}
+  if(t==='circ'){s+=dimH(cx-hh/2,cx+hh/2,bot+14,'D = '+fx(sec.D)+' cm');}
+  if(t==='tube'){s+=dimH(cx-hh/2,cx+hh/2,bot+14,'D = '+fx(sec.D)+' cm');s+=`<text x="${cx}" y="${top-8}" text-anchor="middle" class="muted">t = ${fx(sec.t)} cm</text>`;}
+  if(t==='I'){s+=dimV(L1,top,bot,'d = '+fx(sec.d)+' cm')+dimH(cx-bb/2,cx+bb/2,bot+14,'b<tspan baseline-shift="sub" font-size="9">f</tspan> = '+fx(sec.bf)+' cm');s+=`<text x="${cx}" y="${top-8}" text-anchor="middle" class="muted">t<tspan baseline-shift="sub" font-size="9">f</tspan> = ${fx(sec.tf)} cm · t<tspan baseline-shift="sub" font-size="9">w</tspan> = ${fx(sec.tw)} cm</text>`;}
+  if(t==='custom'){s+=dimV(L1,top,bot,'2c = '+fx(2*sec.c)+' cm');s+=`<text x="${cx}" y="${bot+18}" text-anchor="middle" class="muted">forma não informada (genérica)</text>`;}
+  // diagrama de tensões
+  const sTop=-M*p.cTop/p.I,sBot=M*p.cBot/p.I,smax=Math.max(Math.abs(sTop),Math.abs(sBot),1e-12),ax=345,sc=70/smax;
+  const col=v=>v>0?'#e4605a':'#5b8fd6';
+  s+=`<line x1="${ax}" y1="${top-14}" x2="${ax}" y2="${bot+14}" stroke="#8a949e"/><text x="${ax}" y="${top-20}" text-anchor="middle" class="muted">σ(y)</text>`;
+  s+=`<polygon points="${ax},${lnY} ${ax+sTop*sc},${top} ${ax},${top}" fill="${col(sTop)}" fill-opacity=".85"/>`;
+  s+=`<polygon points="${ax},${lnY} ${ax+sBot*sc},${bot} ${ax},${bot}" fill="${col(sBot)}" fill-opacity=".85"/>`;
+  s+=`<line x1="${ax-80}" y1="${lnY}" x2="${ax+80}" y2="${lnY}" stroke="#1c232b" stroke-dasharray="6 3" stroke-opacity=".5"/>`;
+  const lbl=(v,y,dy)=>`<text x="${ax+(v>=0?6:-6)}" y="${y+dy}" text-anchor="${v>=0?'start':'end'}" style="fill:${v>0?'#b3261e':'#1f5fa8'};font-weight:600">${fmt(v/1e6,4)} MPa</text>`;
+  if(!zero){s+=lbl(sTop,top,-4)+lbl(sBot,bot,14);}
+  s+=`<text x="${ax-80}" y="${bot+30}" class="muted">tração +  ·  compressão −</text>`;
+  $('secSvg').innerHTML=`<svg viewBox="0 0 ${W} ${H+20}" role="img" aria-label="Seção transversal com zonas tracionada e comprimida">${s}</svg>`;
+  const where=pinned?'seção fixada':'cursor';
+  $('secNote').innerHTML=zero?`<b>x = ${fmt(x,4)} m</b> (${where}): M ≈ 0 — sem tensão normal de flexão nesta seção.`:
+   `<b>x = ${fmt(x,4)} m</b> (${x===res.xM&&!pinned?'seção de |M|máx':where}) · <b>M = ${fmt(M/1e3,4)} kN·m</b><br>Fibra superior: <span class="${sTop>0?'tr':'cp'}">${fmt(sTop/1e6,4)} MPa (${sTop>0?'tração':'compressão'})</span> · fibra inferior: <span class="${sBot>0?'tr':'cp'}">${fmt(sBot/1e6,4)} MPa (${sBot>0?'tração':'compressão'})</span><br>σ = M·y/I, com I = ${fmt(p.I*1e8,4)} cm⁴; LN a ${fmt(p.cBot*100,3)} cm da base.`;
 }
 
 // ---------- saída ----------
@@ -613,7 +724,7 @@ function update(){
   const p=isFinite(st.L)?(()=>{try{return sectionProps(st.sec);}catch(e){return null;}})():null;
   const deg=hyperDegree(st);
   $('structInfo').innerHTML=`<span class="tag">${structName(st.left,st.right)}</span> ${deg<0?'— hipostática':deg===0?'— isostática':'— hiperestática de grau '+deg}`;
-  if(p&&isFinite(p.I))$('secInfo').innerHTML=`I = ${fmt(p.I*1e8,4)} cm⁴ · A = ${fmt(p.A*1e4,4)} cm² · c<sub>sup</sub> = ${fmt(p.cTop*100,3)} cm · c<sub>inf</sub> = ${fmt(p.cBot*100,3)} cm`;
+  if(p&&isFinite(p.I))$('secInfo').innerHTML=`I = ${fmt(p.I*1e8,6)} cm⁴ · A = ${fmt(p.A*1e4,5)} cm² · c<sub>sup</sub> = ${fmt(p.cTop*100,3)} cm · c<sub>inf</sub> = ${fmt(p.cBot*100,3)} cm`;
   if(errs.length){$('status').innerHTML=`<div class="alert bad"><b>Corrija os dados de entrada</b>${errs.join('<br>')}</div>`;clearOut();return;}
   const res=solve(st);
   if(res.error){$('status').innerHTML=`<div class="alert bad"><b>Não é possível calcular</b>${res.error}</div>`;drawBeam(st,null);clearOut(true);return;}
@@ -623,6 +734,9 @@ function update(){
   let html='';
   if(overS)html+=`<div class="alert bad"><b>Resistência excedida</b>${m.msg}</div>`;
   if(overD)html+=`<div class="alert warn"><b>Flecha acima do limite ℓ/${fmt(st.n,4)}</b>δmáx = ${fmt(res.dmax*1e3,4)} mm &gt; ${fmt(dlim*1e3,4)} mm.</div>`;
+  const amb=[...document.querySelectorAll('aside input[type=text]')].map(i=>i.value.trim()).filter(v=>/^-?\d{1,3}(\.\d{3})+$/.test(v));
+  if(amb.length)html=`<div class="alert warn"><b>Confira o uso do ponto</b>Você digitou ${amb.map(v=>'"'+v+'"').join(', ')}. O app lê o ponto como vírgula decimal (${amb.map(v=>fmt(num(v),6)).join(', ')}). Se a intenção era um número inteiro, apague o ponto.</div>`+html;
+  if(res.dmax>st.L/50)html+=`<div class="alert warn"><b>Deslocamento grande demais para o modelo</b>δmáx/L = 1/${fmt(st.L/res.dmax,3)}. Acima de ~L/50 a hipótese de pequenos deslocamentos deixa de valer: os números deste caso não têm significado físico confiável.</div>`;
   if(!overS&&!overD)html+=`<div class="alert ok"><b>Dentro dos limites informados</b>Tensão abaixo da resistência de referência e flecha abaixo de ℓ/${fmt(st.n,4)}.</div>`;
   $('status').innerHTML=html;
   drawBeam(st,res);
@@ -640,15 +754,18 @@ function update(){
   plot('plotV',res.X,res.V,{color:'#6b4fa8',unit:'kN',scale:1e-3,L:st.L});
   plot('plotM',res.X,res.M,{color:'#b85a24',unit:'kN·m',scale:1e-3,L:st.L,invert:true});
   plot('plotD',res.X,res.v,{color:'#2f5d8a',unit:'mm',scale:1e3,L:st.L});
+  HOV.pinned=null;drawSection(res.xM,false);
   memo(st,res,dlim,lspan);tabBox(st,res);manual();
 }
-function clearOut(keepBeam){$('kpis').innerHTML='';['plotV','plotM','plotD','memo','tab','manOut'].forEach(i=>$(i).innerHTML='');if(!keepBeam)$('beamSvg').innerHTML='';lastRun={st:null,res:null};}
+function clearOut(keepBeam){$('kpis').innerHTML='';for(const k in PLOTS)delete PLOTS[k];['plotV','plotM','plotD','memo','tab','manOut','secSvg','secNote'].forEach(i=>$(i).innerHTML='');if(!keepBeam)$('beamSvg').innerHTML='';lastRun={st:null,res:null};}
 function memo(st,res,dlim,lspan){
   const p=res.p,t=st.sec.type,EI=res.EI;let I='';
   if(t==='rect')I=`I = b·h³/12 = ${fx(st.sec.b)}·${fx(st.sec.h)}³/12 = ${fmt(p.I*1e8,5)} cm⁴`;
   if(t==='circ')I=`I = π·D⁴/64 = π·${fx(st.sec.D)}⁴/64 = ${fmt(p.I*1e8,5)} cm⁴`;
   if(t==='tri')I=`I = b·h³/36 = ${fx(st.sec.b)}·${fx(st.sec.h)}³/36 = ${fmt(p.I*1e8,5)} cm⁴  (eixo pelo centroide, a h/3 da base)`;
   if(t==='custom')I=`I = ${fmt(p.I*1e8,5)} cm⁴ (informado)`;
+  if(t==='tube')I=`I = π·(D⁴ − d⁴)/64, d = D − 2t = ${fx(st.sec.D-2*st.sec.t)} cm → I = ${fmt(p.I*1e8,5)} cm⁴`;
+  if(t==='I')I=`I = [b_f·d³ − (b_f − t_w)·(d − 2t_f)³]/12 = ${fmt(p.I*1e8,5)} cm⁴ (sem raios de concordância)`;
   const deg=res.deg,R=Math.max(res.F,1);
   let h='<ol>';
   h+=`<li><b>Propriedades da seção</b><br><span class="eq">${I}</span><br><span class="eq">A = ${fmt(p.A*1e4,4)} cm²; c_sup = ${fmt(p.cTop*100,3)} cm; c_inf = ${fmt(p.cBot*100,3)} cm</span></li>`;
@@ -682,7 +799,7 @@ function manual(){
 function exportCSV(){
   const {st,res}=lastRun;if(!res)return;
   const q=v=>String(v).replace(/;/g,',');const n=v=>isFinite(v)?String(+v.toPrecision(6)).replace('.',','):'';
-  const L=[];L.push('Ficha de verificação — Calculadora de Vigas V02');L.push('Data;'+new Date().toLocaleString('pt-BR'));L.push('');
+  const L=[];L.push('Ficha de verificação — Calculadora de Vigas V03');L.push('Data;'+new Date().toLocaleString('pt-BR'));L.push('');
   L.push('Dados de entrada');L.push(`Estrutura;${structName(st.left,st.right)}`);L.push(`L [m];${n(st.L)}`);L.push(`Material;${st.material}`);L.push(`E [GPa];${n(st.E/1e9)}`);
   L.push(`I [cm4];${n(res.p.I*1e8)}`);L.push(`Peso próprio;${st.selfWeight?'sim':'não'}`);
   st.loads.forEach((l,i)=>L.push(`Carga ${i+1};`+(l.type==='P'?`P = ${n(l.P/1e3)} kN em a = ${n(l.a)} m`:l.type==='M'?`M0 = ${n(l.M/1e3)} kN.m em a = ${n(l.a)} m`:`q = ${n(l.q1/1e3)} a ${n(l.q2/1e3)} kN/m de ${n(l.a)} a ${n(l.b)} m`)));
@@ -695,6 +812,15 @@ function exportCSV(){
   const t=compareTab(st,res);if(t){L.push('');L.push('Fórmula tabelada;'+q(t.nome));L.push('Grandeza;Fórmula;Tabela;App;Erro relativo');t.rows.forEach(r=>L.push(`${q(r.label)};${q(r.f)};${n(r.exp)};${n(r.app)};${n(r.err)}`));}
   const blob=new Blob(['﻿'+L.join('\r\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ficha_verificacao_viga.csv';document.body.appendChild(a);a.click();a.remove();
+}
+function exportDiagrams(){
+  const {st,res}=lastRun;if(!res)return;
+  const n=v=>isFinite(v)?String(+v.toPrecision(7)).replace('.',','):'';const p=res.p;
+  const L=['Diagramas — Calculadora de Vigas V03','Estrutura;'+structName(st.left,st.right)+';L [m];'+n(st.L)+';E [GPa];'+n(st.E/1e9)+';I [cm4];'+n(p.I*1e8),'',
+    'x [m];V [kN];M [kN.m];theta [rad];v [mm];sigma_sup [MPa];sigma_inf [MPa]'];
+  for(let i=0;i<res.X.length;i++){const M=res.M[i];L.push([n(res.X[i]),n(res.V[i]/1e3),n(M/1e3),n(res.th[i]),n(res.v[i]*1e3),n(-M*p.cTop/p.I/1e6),n(M*p.cBot/p.I/1e6)].join(';'));}
+  const blob=new Blob(['\ufeff'+L.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='diagramas_viga.csv';document.body.appendChild(a);a.click();a.remove();
 }
 // ---------- modo verificação ----------
 let benchStates=[];
@@ -744,6 +870,8 @@ document.addEventListener('click',e=>{
 });
 $('addLoad').onclick=()=>{uiLoads.push(defaultLoad('P'));renderLoads();update();};
 $('btnCsv').onclick=exportCSV;
+$('btnDiag').onclick=exportDiagrams;
+$('btnSecMax').onclick=()=>{HOV.pinned=null;if(lastRun.res)drawSection(lastRun.res.xM,false);};
 $('btnVerif').onclick=()=>{const v=$('verif');v.classList.toggle('open');if(v.classList.contains('open')){runVerification();v.scrollIntoView({behavior:'smooth'});}};
 // início
 setState(PRESETS.tutorial());
